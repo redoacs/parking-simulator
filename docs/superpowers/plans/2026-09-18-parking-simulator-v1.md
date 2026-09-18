@@ -4086,7 +4086,22 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   expect(after.state.x).toBeLessThan(start.state.x - 1.0);
   expect(after.historyLength).toBeGreaterThan(60);
   expect(Number.isFinite(after.clearance!.distance)).toBe(true);
-  expect(after.clearance!.distance).not.toBe(start.clearance!.distance);
+
+  // A straight reverse in this preset slides the mirror along the neighbour's flat edge, so the
+  // clearance can legitimately stay put (Task 13 measurement). An arc toward the kerb must change it.
+  await page.evaluate(() => {
+    window.__sim!.setKey('left', true);
+    window.__sim!.setKey('reverse', true);
+  });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    window.__sim!.setKey('left', false);
+    window.__sim!.setKey('reverse', false);
+  });
+  await page.waitForTimeout(100);
+  const arced = await page.evaluate(() => window.__sim!.snapshot());
+  expect(arced.state.theta).not.toBeCloseTo(after.state.theta, 3);
+  expect(arced.clearance!.distance).not.toBeCloseTo(after.clearance!.distance, 3);
 
   // The start pose lies inside the swept envelope: read back the texel under the original rear axle.
   const coverage = await page.evaluate(([x, y]) => window.__sim!.readEnvelopeAt(x, y), [start.state.x, start.state.y] as const);
