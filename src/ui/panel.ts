@@ -50,7 +50,11 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
         params = clampParams(def, params);
         input.value = String(params[p.key]);
         emit();
-        input.blur(); // a committed edit returns the keyboard to driving (DriveInput ignores keys aimed at inputs)
+      });
+      // Committed edits return focus to the canvas so the drive keys work (DriveInput ignores keys aimed at controls).
+      // Number inputs commit on Enter only: `change` also fires per arrow/spinner step, and blurring there would end stepping.
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') input.blur();
       });
       paramsBox.append(el('label', { class: 'param' }, `${p.label} (${p.unit})`, input));
     }
@@ -61,7 +65,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     params = defaultParams(getPreset(presetId)!);
     renderParams();
     emit();
-    presetSelect.blur(); // a focused select would turn the arrow keys into preset changes
+    presetSelect.blur();
   });
 
   const mirrorsInput = el('input', { type: 'checkbox' });
@@ -69,6 +73,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   mirrorsInput.addEventListener('change', () => {
     mirrors = mirrorsInput.checked;
     emit();
+    mirrorsInput.blur();
   });
   const d = o.vehicle.spec;
   const labels: Record<(typeof NUMERIC_FIELDS)[number], string> = {
@@ -85,6 +90,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
 
   const timeScale = el('input', { type: 'range', min: '0.1', max: '1', step: '0.05', value: '1' });
   timeScale.addEventListener('input', () => o.onTimeScale(Number(timeScale.value)));
+  timeScale.addEventListener('change', () => timeScale.blur());
   const resetBtn = el('button', { type: 'button' }, 'Reset (R)');
   resetBtn.addEventListener('click', () => o.onReset());
   const fitBtn = el('button', { type: 'button' }, 'Fit view (F)');
