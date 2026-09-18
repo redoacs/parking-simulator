@@ -26,6 +26,37 @@ describe('stepVehicle', () => {
     expect(Math.abs(((s.theta + Math.PI) % (2 * Math.PI)) - Math.PI)).toBeLessThan(1e-6);
   });
 
+  it('integrates an exact arc in one coarse step (Euler would land at (ds, 0))', () => {
+    const delta = 0.4;
+    const R = p.wheelbase / Math.tan(delta);
+    const v = 1;
+    const dt = ((Math.PI / 2) * R) / v; // a quarter turn in a single step
+    const s = stepVehicle({ ...start, steer: delta }, { steer: delta, speed: v }, p, dt);
+    expect(s.x).toBeCloseTo(R, 9);
+    expect(s.y).toBeCloseTo(R, 9);
+    expect(s.theta).toBeCloseTo(Math.PI / 2, 9);
+  });
+
+  it('mirrors the arc for negative steer', () => {
+    const delta = -0.4;
+    const R = p.wheelbase / Math.tan(Math.abs(delta));
+    const dt = (Math.PI / 2) * R;
+    const s = stepVehicle({ ...start, steer: delta }, { steer: delta, speed: 1 }, p, dt);
+    expect(s.x).toBeCloseTo(R, 9);
+    expect(s.y).toBeCloseTo(-R, 9);
+    expect(s.theta).toBeCloseTo(-Math.PI / 2, 9);
+  });
+
+  it('reversing with positive steer traces the same circle backwards', () => {
+    const delta = 0.4;
+    const R = p.wheelbase / Math.tan(delta);
+    const dt = (Math.PI / 2) * R;
+    const s = stepVehicle({ ...start, steer: delta }, { steer: delta, speed: -1 }, p, dt);
+    expect(s.x).toBeCloseTo(-R, 9);
+    expect(s.y).toBeCloseTo(R, 9);
+    expect(s.theta).toBeCloseTo(-Math.PI / 2, 9);
+  });
+
   it('turns left (theta increases) for positive steer going forward', () => {
     const s = stepVehicle({ ...start, steer: 0.3 }, { steer: 0.3, speed: 1 }, p, 0.5);
     expect(s.theta).toBeGreaterThan(0);
