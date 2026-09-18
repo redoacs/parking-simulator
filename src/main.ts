@@ -6,6 +6,10 @@ import { WebGpuUnavailableError } from './render/gpu';
 import { App, type Snapshot } from './app';
 import type { DriveKey } from './ui/input';
 import { decideOnDeviceLoss, type KeyValueStore } from './ui/deviceLoss';
+import { decodeHash, encodeHash, type HashState } from './ui/hash';
+import { buildPanel } from './ui/panel';
+import { createReadouts } from './ui/readouts';
+import { PRESETS, defaultParams } from './scene/presets';
 
 declare global {
   interface Window {
@@ -53,6 +57,33 @@ async function main(): Promise<void> {
     readEnvelopeAt: (x, y) => renderer.readEnvelopeAt({ x, y }),
     setKey: (key, down) => app.input.setKey(key, down),
   };
+
+  const panelRoot = document.getElementById('panel') as HTMLElement;
+  const hud = document.getElementById('hud') as HTMLElement;
+  const initial: HashState = decodeHash(location.hash) ?? { presetId: PRESETS[0]!.id, params: defaultParams(PRESETS[0]!), mirrors: true };
+  const applyScenario = (h: HashState): void => {
+    app.setPreset(h.presetId, h.params);
+    app.setMirrors(h.mirrors);
+    history.replaceState(null, '', '#' + encodeHash(h));
+  };
+  const panel = buildPanel(panelRoot, {
+    vehicle,
+    initial,
+    onScenario: applyScenario,
+    onTimeScale: (x) => app.setTimeScale(x),
+    onReset: () => app.reset(),
+    onFit: () => app.fitView(),
+    bind: (b, k) => app.input.bind(b, k),
+  });
+  app.onSnapshot = createReadouts(hud, panel.readoutSection);
+  window.addEventListener('hashchange', () => {
+    const h = decodeHash(location.hash);
+    if (h) {
+      panel.setScenario(h);
+      applyScenario(h);
+    }
+  });
+  applyScenario(initial);
   app.start();
 }
 
