@@ -1,4 +1,7 @@
 import type { VehicleDims } from '../vehicle/types';
+import type { VehicleState } from '../sim/model';
+import type { DerivedVehicle } from '../vehicle/derive';
+import { type Vec2, vec } from './vec2';
 
 /** Lateral (a) and longitudinal (b) offsets of the turning-circle reference point from the rear-axle centre. */
 function referenceOffsets(dims: VehicleDims): { a: number; b: number } {
@@ -30,4 +33,41 @@ export function steerFromTurningCircle(dims: VehicleDims): number {
   const half = diameter / 2;
   const R = Math.sqrt(half * half - b * b) - a;
   return Math.atan(dims.wheelbase / R);
+}
+
+export const GUIDE_MIN_STEER = (0.5 * Math.PI) / 180;
+
+export type GuideKind = 'innerRear' | 'outerFront' | 'outerCorner';
+
+export interface GuideCircle {
+  center: Vec2;
+  radius: number;
+  kind: GuideKind;
+}
+
+/** Signed rear-axle radius (positive = turning left). */
+function signedRadius(steer: number, wheelbase: number): number {
+  return wheelbase / Math.tan(steer);
+}
+
+export function instantaneousCentre(s: VehicleState, wheelbase: number): Vec2 | null {
+  if (Math.abs(s.steer) < GUIDE_MIN_STEER) return null;
+  const R = signedRadius(s.steer, wheelbase);
+  // Left normal of heading is (-sin, cos); ICR = rear axle + R * leftNormal.
+  return vec(s.x - R * Math.sin(s.theta), s.y + R * Math.cos(s.theta));
+}
+
+export function guideCircles(s: VehicleState, v: DerivedVehicle): GuideCircle[] {
+  const c = instantaneousCentre(s, v.dims.wheelbase);
+  if (!c) return [];
+  const R = Math.abs(signedRadius(s.steer, v.dims.wheelbase));
+  const L = v.dims.wheelbase;
+  const innerRear = R - v.dims.trackRear / 2;
+  const outerFront = Math.hypot(R + v.dims.trackFront / 2, L);
+  const outerCorner = Math.hypot(R + v.dims.widthBody / 2, L + v.dims.frontOverhang);
+  return [
+    { center: c, radius: innerRear, kind: 'innerRear' },
+    { center: c, radius: outerFront, kind: 'outerFront' },
+    { center: c, radius: outerCorner, kind: 'outerCorner' },
+  ];
 }
