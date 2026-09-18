@@ -9,6 +9,8 @@ export interface PanelOptions {
   vehicle: DerivedVehicle;
   initial: HashState;
   onScenario(h: HashState): void;
+  /** Mirrors are a display/clearance option: toggling must not restart the run. */
+  onMirrors(on: boolean): void;
   onTimeScale(x: number): void;
   onReset(): void;
   onFit(): void;
@@ -72,7 +74,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   mirrorsInput.checked = mirrors;
   mirrorsInput.addEventListener('change', () => {
     mirrors = mirrorsInput.checked;
-    emit();
+    o.onMirrors(mirrors);
     mirrorsInput.blur();
   });
   const d = o.vehicle.spec;

@@ -70,6 +70,11 @@ async function main(): Promise<void> {
     vehicle,
     initial,
     onScenario: applyScenario,
+    onMirrors: (on) => {
+      app.setMirrors(on);
+      const s = app.snapshot();
+      history.replaceState(null, '', '#' + encodeHash({ presetId: s.presetId, params: s.params, mirrors: on }));
+    },
     onTimeScale: (x) => app.setTimeScale(x),
     onReset: () => app.reset(),
     onFit: () => app.fitView(),
