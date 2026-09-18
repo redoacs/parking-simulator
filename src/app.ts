@@ -5,7 +5,7 @@ import type { Renderer } from './render/renderer';
 import { ringInstancesFor, rulerPolygon, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import type { ColoredPolygon } from './render/polygons';
 import { clampParams, getPreset, PRESETS, defaultParams } from './scene/presets';
-import type { Params, Scene } from './scene/types';
+import type { ObstacleKind, Params, Scene } from './scene/types';
 import { StateHistory } from './sim/history';
 import { SIM_DT, simParamsFor, stepVehicle, type SimParams, type VehicleState } from './sim/model';
 import { DriveInput } from './ui/input';
@@ -21,6 +21,8 @@ export interface Snapshot {
   timeScale: number;
   state: VehicleState;
   clearance: Clearance | null;
+  /** Kind of the obstacle the clearance is measured against. */
+  obstacleKind: ObstacleKind | null;
   contact: boolean;
   firstContactTime: number | null;
   parked: boolean;
@@ -112,6 +114,7 @@ export class App {
       timeScale: this.timeScale,
       state: this.state,
       clearance: this.clearance,
+      obstacleKind: this.clearance ? (this.scene.obstacles[this.clearance.obstacleIndex]?.kind ?? null) : null,
       contact: this.clearance !== null && this.clearance.distance <= 0,
       firstContactTime: this.firstContactTime,
       parked,

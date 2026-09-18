@@ -34,9 +34,11 @@ export function createReadouts(hud: HTMLElement, section: HTMLElement): (s: Snap
       clearance.value.className = `value band-${band}`;
       hudClearance.textContent = `clearance ${text}`;
       hudClearance.className = `band-${band}`;
-      against.value.textContent = `obstacle #${s.clearance.obstacleIndex}`;
+      against.value.textContent = s.obstacleKind ?? '—';
     } else {
       clearance.value.textContent = '—';
+      clearance.value.className = 'value';
+      against.value.textContent = '—';
       hudClearance.textContent = '';
     }
     contact.value.textContent = s.firstContactTime === null ? 'none' : `t = ${s.firstContactTime.toFixed(2)} s`;

@@ -44,6 +44,9 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   expect(Number.isFinite(arced.clearance!.distance)).toBe(true);
   expect(arced.state.theta).not.toBeCloseTo(after.state.theta, 3);
   expect(arced.clearance!.distance).not.toBeCloseTo(after.clearance!.distance, 3);
+  // Spec §6: the readout names what the clearance is measured against (the arc reverses into the front neighbour car).
+  expect(arced.obstacleKind).toBe('car');
+  await expect(page.locator('#panel .readout', { hasText: 'Against' })).toContainText('car');
 
   // The start pose lies inside the swept envelope: read back the texel under the original rear axle.
   const coverage = await page.evaluate(([x, y]) => window.__sim!.readEnvelopeAt(x, y), [start.state.x, start.state.y] as const);
