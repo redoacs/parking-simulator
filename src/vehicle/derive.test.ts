@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import taos from './data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './validate';
 import { deriveVehicle, collisionOutline } from './derive';
-import { steerFromTurningCircle } from '../geom/turning';
+import { steerFromTurningCircle, minimumTurningDiameter } from '../geom/turning';
 import { boundsOf, signedArea } from '../geom/polygon';
 
 const spec = validateVehicleSpec(taos);
@@ -25,6 +25,14 @@ describe('steerFromTurningCircle', () => {
     const R = d.wheelbase / Math.tan(wall);
     const corner = Math.hypot(R + d.widthBody / 2, d.wheelbase + d.frontOverhang);
     expect(corner * 2).toBeCloseTo(11.5, 9);
+  });
+  it('reports the minimum feasible kerb diameter for the Taos', () => {
+    expect(minimumTurningDiameter(d)).toBeCloseTo(2 * Math.hypot(d.trackFront / 2, d.wheelbase), 12);
+    expect(minimumTurningDiameter(d)).toBeCloseTo(5.603, 3);
+  });
+  it('throws instead of returning NaN or a negative steer for an infeasible circle', () => {
+    expect(() => steerFromTurningCircle({ ...d, turningCircle: { diameter: 5.5, kind: 'kerb' } })).toThrow(RangeError);
+    expect(() => steerFromTurningCircle({ ...d, turningCircle: { diameter: 6.0, kind: 'wall' } })).toThrow(RangeError);
   });
 });
 

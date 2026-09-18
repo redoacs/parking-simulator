@@ -1,4 +1,5 @@
-import { NUMERIC_FIELDS, type Cited, type Source, type VehicleSpec } from './types';
+import { NUMERIC_FIELDS, type Cited, type Source, type VehicleSpec, dimsOf } from './types';
+import { minimumTurningDiameter } from '../geom/turning';
 
 export class VehicleSpecError extends Error {
   constructor(
@@ -68,6 +69,9 @@ export function validateVehicleSpec(raw: unknown): VehicleSpec {
   if (spec.widthMirrors.value < spec.widthBody.value) throw new VehicleSpecError('widthMirrors', 'must be >= widthBody');
   if (spec.trackFront.value >= spec.widthBody.value) throw new VehicleSpecError('trackFront', 'must be < widthBody');
   if (spec.trackRear.value >= spec.widthBody.value) throw new VehicleSpecError('trackRear', 'must be < widthBody');
-  if (spec.turningCircle.value.diameter / 2 <= spec.wheelbase.value) throw new VehicleSpecError('turningCircle', 'radius must exceed wheelbase');
+  const minDiameter = minimumTurningDiameter(dimsOf(spec));
+  if (spec.turningCircle.value.diameter <= minDiameter) {
+    throw new VehicleSpecError('turningCircle', `diameter ${spec.turningCircle.value.diameter} m is not feasible for a ${spec.turningCircle.value.kind} reference point; must exceed ${minDiameter.toFixed(3)} m`);
+  }
   return spec;
 }

@@ -51,4 +51,14 @@ describe('validateVehicleSpec', () => {
     bad.turningCircle.value.kind = 'curb';
     expect(() => validateVehicleSpec(bad)).toThrow(/turningCircle/);
   });
+
+  it('rejects a turning circle the wheel geometry cannot trace', () => {
+    const kerb = clone(taos);
+    kerb.turningCircle.value.diameter = 5.5; // below 2·hypot(trackFront/2, wheelbase) ≈ 5.603
+    expect(() => validateVehicleSpec(kerb)).toThrow(/turningCircle.*not feasible/);
+    const wall = clone(taos) as unknown as { turningCircle: { value: { diameter: number; kind: string } } };
+    wall.turningCircle.value.kind = 'wall';
+    wall.turningCircle.value.diameter = 7.0; // below 2·hypot(widthBody/2, wheelbase + frontOverhang) ≈ 7.352
+    expect(() => validateVehicleSpec(wall)).toThrow(/turningCircle.*not feasible/);
+  });
 });
