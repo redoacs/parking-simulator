@@ -147,6 +147,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['dist/', 'node_modules/', '.worktrees/', 'playwright-report/', 'test-results/'] },
   ...tseslint.configs.recommended,
+  { rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
 );
 ```
 
@@ -3376,7 +3377,7 @@ export class App {
   private mirrors = true;
   private timeScale = 1;
   private state: VehicleState = this.scene.start;
-  private readonly history = new StateHistory(HISTORY_SECONDS / SIM_DT);
+  private readonly history = new StateHistory(Math.round(HISTORY_SECONDS / SIM_DT));
   private simTime = 0;
   private firstContactTime: number | null = null;
   private clearance: Clearance | null = null;
