@@ -532,6 +532,10 @@ describe('convexPenetration', () => {
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.8, 0, 1.8, 1))).toBeCloseTo(0.2, 12);
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.3, 0.9, 0.6, 1.9))).toBeCloseTo(0.1, 12);
   });
+  it('uses the minimum translation, not the interval intersection, when intervals nest', () => {
+    expect(convexPenetration(rect(0, 0, 4, 4), rect(1, -1, 2, 5))).toBeCloseTo(2, 12);
+    expect(convexPenetration(rect(0, 0, 4.5, 1.8), rect(2.15, -1, 2.35, 3))).toBeCloseTo(2.35, 12);
+  });
 });
 
 describe('polygonDistance', () => {
@@ -553,6 +557,9 @@ describe('polygonDistance', () => {
   });
   it('containment is negative', () => {
     expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeLessThan(0);
+  });
+  it('containment depth is the shortest way out', () => {
+    expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeCloseTo(-2, 12);
   });
 });
 ```
@@ -639,7 +646,9 @@ export function convexPenetration(a: Polygon, b: Polygon): number {
       const axis = normalize(perp(sub(poly[(i + 1) % poly.length]!, poly[i]!)));
       const [amin, amax] = project(a, axis);
       const [bmin, bmax] = project(b, axis);
-      const overlap = Math.min(amax, bmax) - Math.max(amin, bmin);
+      // Minimum translation along this axis: b moves until bmin >= amax or bmax <= amin.
+      // (Not the interval intersection — that under-reports when one interval nests in the other.)
+      const overlap = Math.min(amax - bmin, bmax - amin);
       if (overlap <= 1e-12) return 0;
       if (overlap < minOverlap) minOverlap = overlap;
     }
