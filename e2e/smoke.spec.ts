@@ -55,6 +55,29 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   // Readout text reflects the state: the label is static, so also require the text to have changed.
   await expect(page.locator('#hud')).toContainText('clearance');
   expect(await page.locator('#hud').innerText()).not.toBe(hudBefore);
+
+  // Rewind pops the recorded history: the car moves back toward where it started.
+  await page.evaluate(() => window.__sim!.setKey('rewind', true));
+  await page.waitForFunction((n) => window.__sim!.snapshot().historyLength < n / 2, arced.historyLength, { timeout: 15_000 });
+  await page.evaluate(() => window.__sim!.setKey('rewind', false));
+  await page.waitForTimeout(100);
+  const rewound = await page.evaluate(() => window.__sim!.snapshot());
+  expect(rewound.historyLength).toBeLessThan(arced.historyLength);
+  expect(rewound.state.x).toBeGreaterThan(arced.state.x);
+
+  // Reset restores the start pose and clears the run.
+  await page.evaluate(() => {
+    window.__sim!.setKey('reset', true);
+    window.__sim!.setKey('reset', false);
+  });
+  await page.waitForTimeout(200);
+  const reset = await page.evaluate(() => window.__sim!.snapshot());
+  expect(reset.historyLength).toBe(0);
+  expect(reset.state.x).toBeCloseTo(start.state.x, 3);
+  // simTime counts idle steps too, so 200 ms after the reset it reads ~0.2 s, not 0: assert the clock restarted.
+  expect(reset.simTime).toBeLessThan(1);
+  expect(reset.simTime).toBeLessThan(arced.simTime);
+  expect(reset.firstContactTime).toBeNull();
 });
 
 test('shows a message instead of a blank page without WebGPU', async ({ browser }) => {
