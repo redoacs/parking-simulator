@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { SIM_DT, stepVehicle, type SimParams, type VehicleState } from './model';
+import { SIM_DT, simParamsFor, stepVehicle, type SimParams, type VehicleState } from './model';
+import taos from '../vehicle/data/taos-trendline-mx-2025.json';
+import { validateVehicleSpec } from '../vehicle/validate';
+import { deriveVehicle } from '../vehicle/derive';
 
 const p: SimParams = { wheelbase: 2.689, maxSteer: 0.61, steerRate: 100, maxSpeed: 2 };
 const start: VehicleState = { x: 0, y: 0, theta: 0, steer: 0, speed: 0 };
@@ -85,5 +88,16 @@ describe('stepVehicle', () => {
     const s = stepVehicle(start, { steer: 0.4, speed: 0 }, p, 1);
     expect(s.x).toBe(0);
     expect(s.y).toBe(0);
+  });
+});
+
+describe('simParamsFor', () => {
+  it('pins the Taos simulation parameters: 2 m/s, 1.5 s lock to lock, wheelbase 2.689 m', () => {
+    const vehicle = deriveVehicle(validateVehicleSpec(taos));
+    const sp = simParamsFor(vehicle);
+    expect(sp.maxSpeed).toBe(2);
+    expect(sp.wheelbase).toBe(2.689);
+    expect(sp.maxSteer).toBe(vehicle.maxSteer);
+    expect(sp.steerRate).toBeCloseTo((2 * vehicle.maxSteer) / 1.5, 12);
   });
 });
