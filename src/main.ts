@@ -5,6 +5,7 @@ import { Renderer } from './render/renderer';
 import { WebGpuUnavailableError } from './render/gpu';
 import { App, type Snapshot } from './app';
 import type { DriveKey } from './ui/input';
+import { decideOnDeviceLoss, type KeyValueStore } from './ui/deviceLoss';
 
 declare global {
   interface Window {
@@ -38,14 +39,12 @@ async function main(): Promise<void> {
     showFatal(e instanceof WebGpuUnavailableError ? `${e.message} Use Chrome/Edge 113+, Safari 26+, or Firefox 141+.` : String(e));
     return;
   }
-  let lostOnce = false;
   renderer.device.lost.then((info) => {
     if (info.reason === 'destroyed') return;
-    if (lostOnce) showFatal(`GPU device lost twice (${info.message}). Reload the page.`);
-    else {
-      lostOnce = true;
-      location.reload();
-    }
+    let store: KeyValueStore | null = null;
+    try { store = window.sessionStorage; } catch { store = null; }
+    if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
+    else showFatal(`The GPU device was lost again (${info.message}). Reloading did not help; try another browser or GPU.`);
   });
 
   const app = new App(canvas, renderer, vehicle);

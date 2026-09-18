@@ -14,6 +14,19 @@ const KEYMAP: Record<string, DriveKey> = {
   KeyF: 'fit',
 };
 
+export interface KeyEventLike {
+  code: string;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  altKey?: boolean;
+}
+
+/** Drive key for a keyboard event, or undefined when unmapped or when a modifier is held (browser shortcuts win). */
+export function keyFromEvent(e: KeyEventLike): DriveKey | undefined {
+  if (e.ctrlKey || e.metaKey || e.altKey) return undefined;
+  return KEYMAP[e.code];
+}
+
 export class DriveInput {
   private readonly down = new Set<DriveKey>();
   private resetPending = false;
@@ -37,13 +50,13 @@ export class DriveInput {
   attach(target: Window): void {
     target.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
-      if (e.repeat) {
-        if (KEYMAP[e.code]) e.preventDefault();
-        return;
-      }
-      if (this.handleKey(e.code, true)) e.preventDefault();
+      const key = keyFromEvent(e);
+      if (!key) return;
+      e.preventDefault();
+      if (!e.repeat) this.setKey(key, true);
     });
     target.addEventListener('keyup', (e) => {
+      // Not gated by modifiers: the keydown may predate the modifier, and a skipped keyup leaves the key stuck down.
       if (this.handleKey(e.code, false)) e.preventDefault();
     });
     target.addEventListener('blur', () => this.down.clear());

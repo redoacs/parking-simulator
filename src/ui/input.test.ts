@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DriveInput } from './input';
+import { DriveInput, keyFromEvent } from './input';
 import type { SimParams, VehicleState } from '../sim/model';
 
 const p: SimParams = { wheelbase: 2.689, maxSteer: 0.6, steerRate: 1, maxSpeed: 2 };
@@ -53,5 +53,12 @@ describe('DriveInput.control', () => {
     i.handleKey('KeyZ', true);
     expect(i.rewindHeld).toBe(true);
     expect(i.handleKey('KeyQ', true)).toBe(false); // unmapped → not handled
+  });
+  it('ignores modified combos so browser shortcuts still work', () => {
+    expect(keyFromEvent({ code: 'KeyR' })).toBe('reset');
+    expect(keyFromEvent({ code: 'KeyR', ctrlKey: true })).toBeUndefined();
+    expect(keyFromEvent({ code: 'KeyS', metaKey: true })).toBeUndefined();
+    expect(keyFromEvent({ code: 'ArrowLeft', altKey: true })).toBeUndefined();
+    expect(keyFromEvent({ code: 'KeyQ' })).toBeUndefined();
   });
 });

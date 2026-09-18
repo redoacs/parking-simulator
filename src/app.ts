@@ -42,6 +42,7 @@ export class App {
   private readonly history = new StateHistory(Math.round(HISTORY_SECONDS / SIM_DT));
   private simTime = 0;
   private firstContactTime: number | null = null;
+  private firstContactHistoryLength: number | null = null;
   private clearance: Clearance | null = null;
   private staticPolys: ColoredPolygon[] = scenePolygons(this.scene);
   private staticVersion = 1;
@@ -89,6 +90,7 @@ export class App {
     this.history.clear();
     this.simTime = 0;
     this.firstContactTime = null;
+    this.firstContactHistoryLength = null;
     this.pendingFootprints = [];
     this.accumulator = 0;
     this.renderer.resetEnvelope();
@@ -190,7 +192,10 @@ export class App {
       this.simTime = Math.max(0, this.simTime - SIM_DT);
     }
     this.state = { ...(this.history.last() ?? this.scene.start), speed: 0 };
-    if (this.firstContactTime !== null && this.simTime < this.firstContactTime) this.firstContactTime = null;
+    if (this.firstContactHistoryLength !== null && this.history.length < this.firstContactHistoryLength) {
+      this.firstContactTime = null;
+      this.firstContactHistoryLength = null;
+    }
     this.updateClearance();
   }
 
@@ -207,7 +212,10 @@ export class App {
 
   private updateClearance(): void {
     this.clearance = checkClearance(worldOutline(this.vehicle, this.state, this.mirrors), this.scene);
-    if (this.clearance && this.clearance.distance <= 0 && this.firstContactTime === null) this.firstContactTime = this.simTime;
+    if (this.clearance && this.clearance.distance <= 0 && this.firstContactTime === null) {
+      this.firstContactTime = this.simTime;
+      this.firstContactHistoryLength = this.history.length;
+    }
   }
 
   private attachCameraControls(): void {
