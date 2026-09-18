@@ -862,7 +862,8 @@ Expected: FAIL — cannot resolve `./validate`.
 
 `src/vehicle/validate.ts`:
 ```ts
-import { NUMERIC_FIELDS, type Cited, type Source, type VehicleSpec } from './types';
+import { NUMERIC_FIELDS, dimsOf, type Cited, type Source, type VehicleSpec } from './types';
+import { minimumTurningDiameter } from '../geom/turning';
 
 export class VehicleSpecError extends Error {
   constructor(
@@ -932,7 +933,11 @@ export function validateVehicleSpec(raw: unknown): VehicleSpec {
   if (spec.widthMirrors.value < spec.widthBody.value) throw new VehicleSpecError('widthMirrors', 'must be >= widthBody');
   if (spec.trackFront.value >= spec.widthBody.value) throw new VehicleSpecError('trackFront', 'must be < widthBody');
   if (spec.trackRear.value >= spec.widthBody.value) throw new VehicleSpecError('trackRear', 'must be < widthBody');
-  if (spec.turningCircle.value.diameter / 2 <= spec.wheelbase.value) throw new VehicleSpecError('turningCircle', 'radius must exceed wheelbase');
+  // Task 5 ruling: the exact feasibility condition lives in geom/turning.ts (minimumTurningDiameter).
+  const minDiameter = minimumTurningDiameter(dimsOf(spec));
+  if (spec.turningCircle.value.diameter <= minDiameter) {
+    throw new VehicleSpecError('turningCircle', `diameter ${spec.turningCircle.value.diameter} m is not feasible for a ${spec.turningCircle.value.kind} reference point; must exceed ${minDiameter.toFixed(3)} m`);
+  }
   return spec;
 }
 ```
@@ -1050,16 +1055,33 @@ import type { VehicleDims } from '../vehicle/types';
  * Reference point at lateral offset a and longitudinal offset b from the
  * rear-axle centre traces sqrt((R + a)^2 + b^2) = D / 2.
  */
-export function steerFromTurningCircle(dims: VehicleDims): number {
-  const { diameter, kind } = dims.turningCircle;
+function referenceOffsets(dims: VehicleDims): { a: number; b: number } {
   const L = dims.wheelbase;
-  const a = kind === 'kerb' ? dims.trackFront / 2 : dims.widthBody / 2;
-  const b = kind === 'kerb' ? L : L + dims.frontOverhang;
+  return dims.turningCircle.kind === 'kerb'
+    ? { a: dims.trackFront / 2, b: L }
+    : { a: dims.widthBody / 2, b: L + dims.frontOverhang };
+}
+
+/** Smallest diameter the reference point can trace (R → 0⁺). Below this the spec is inconsistent. */
+export function minimumTurningDiameter(dims: VehicleDims): number {
+  const { a, b } = referenceOffsets(dims);
+  return 2 * Math.hypot(a, b);
+}
+
+export function steerFromTurningCircle(dims: VehicleDims): number {
+  const { diameter } = dims.turningCircle;
+  const min = minimumTurningDiameter(dims);
+  if (!(diameter > min)) {
+    throw new RangeError(`turning circle ${diameter} m is not feasible for a ${dims.turningCircle.kind} reference point; must exceed ${min.toFixed(3)} m`);
+  }
+  const { a, b } = referenceOffsets(dims);
   const half = diameter / 2;
   const R = Math.sqrt(half * half - b * b) - a;
-  return Math.atan(L / R);
+  return Math.atan(dims.wheelbase / R);
 }
 ```
+
+(Task 5 review ruling: validation's `D/2 > wheelbase` is weaker than the formula's requirement `(D/2)² > a² + b²`; `validateVehicleSpec` uses `minimumTurningDiameter` for its `turningCircle` check instead of the radius-vs-wheelbase line, and `steerFromTurningCircle` throws on the same condition.)
 
 `src/vehicle/derive.ts`:
 ```ts
