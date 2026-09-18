@@ -20,7 +20,8 @@ export interface Scene {
 export interface ParamDef {
   key: string;
   label: string;
-  unit: 'm' | 'deg';
+  /** 'flag' is a boolean modelled as 0/1 (min 0, max 1, step 1). */
+  unit: 'm' | 'deg' | 'flag';
   min: number;
   max: number;
   step: number;

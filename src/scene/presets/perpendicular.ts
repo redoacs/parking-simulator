@@ -5,6 +5,7 @@ import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } 
  * Bay opens toward -y onto an aisle. Target x in [0, bayWidth], y in [0, bayDepth].
  * Wall behind the bay row, neighbour cars either side, aisle y in [-aisleWidth, 0].
  * Car starts in the aisle heading -x with the bay on its left, ready to reverse in.
+ * `neighbours` (flag) omits the two neighbour cars when 0.
  */
 export const perpendicular: PresetDef = {
   id: 'perpendicular',
@@ -13,6 +14,7 @@ export const perpendicular: PresetDef = {
     { key: 'bayWidth', label: 'Bay width', unit: 'm', min: 2.3, max: 3.2, step: 0.05, default: 2.5 },
     { key: 'bayDepth', label: 'Bay depth', unit: 'm', min: 4.5, max: 6.0, step: 0.1, default: 5.0 },
     { key: 'aisleWidth', label: 'Aisle width', unit: 'm', min: 5.0, max: 8.0, step: 0.1, default: 6.0 },
+    { key: 'neighbours', label: 'Neighbour cars', unit: 'flag', min: 0, max: 1, step: 1, default: 1 },
   ],
   build(p): Scene {
     const bayWidth = p.bayWidth!;
@@ -22,10 +24,16 @@ export const perpendicular: PresetDef = {
     const carY0 = bayDepth - NEIGHBOUR_CAR.length - 0.25;
     const rowX0 = -2 * bayWidth;
     const rowX1 = 3 * bayWidth;
+    const neighbours: Obstacle[] =
+      p.neighbours! > 0
+        ? [
+            { kind: 'car', height: 1.6, polygon: rect(-bayWidth + carX, carY0, -bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
+            { kind: 'car', height: 1.6, polygon: rect(bayWidth + carX, carY0, bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
+          ]
+        : [];
     const obstacles: Obstacle[] = [
       { kind: 'wall', height: 2.5, polygon: rect(rowX0, bayDepth, rowX1, bayDepth + 0.2) },
-      { kind: 'car', height: 1.6, polygon: rect(-bayWidth + carX, carY0, -bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
-      { kind: 'car', height: 1.6, polygon: rect(bayWidth + carX, carY0, bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
+      ...neighbours,
       { kind: 'line', height: 0, polygon: rect(rowX0, -0.05, rowX1, 0.05) },
       { kind: 'line', height: 0, polygon: rect(rowX0, -aisleWidth - 0.05, rowX1, -aisleWidth + 0.05) },
     ];

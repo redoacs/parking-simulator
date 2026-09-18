@@ -64,3 +64,18 @@ describe('registry', () => {
     expect('bogus' in out).toBe(false);
   });
 });
+
+describe('optional scene features (spec §2)', () => {
+  const kinds = (id: string, overrides: Record<string, number>): string[] => {
+    const def = getPreset(id)!;
+    return def.build({ ...defaultParams(def), ...overrides }).obstacles.map((o) => o.kind);
+  };
+  it('parallel: kerb flag defaults on; kerb: 0 removes the kerb obstacle', () => {
+    expect(kinds('parallel', {}).filter((k) => k === 'kerb')).toHaveLength(1);
+    expect(kinds('parallel', { kerb: 0 })).not.toContain('kerb');
+  });
+  it('perpendicular: neighbours flag defaults on; neighbours: 0 removes both neighbour cars', () => {
+    expect(kinds('perpendicular', {}).filter((k) => k === 'car')).toHaveLength(2);
+    expect(kinds('perpendicular', { neighbours: 0 })).not.toContain('car');
+  });
+});

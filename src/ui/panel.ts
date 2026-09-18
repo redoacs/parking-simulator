@@ -58,7 +58,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') input.blur();
       });
-      paramsBox.append(el('label', { class: 'param' }, `${p.label} (${p.unit})`, input));
+      paramsBox.append(el('label', { class: 'param' }, `${p.label} (${p.unit === 'flag' ? '0/1' : p.unit})`, input));
     }
   };
 
