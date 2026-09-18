@@ -71,7 +71,7 @@ export function convexPenetration(a: Polygon, b: Polygon): number {
       const axis = normalize(perp(sub(poly[(i + 1) % poly.length]!, poly[i]!)));
       const [amin, amax] = project(a, axis);
       const [bmin, bmax] = project(b, axis);
-      const overlap = Math.min(amax, bmax) - Math.max(amin, bmin);
+      const overlap = Math.min(amax - bmin, bmax - amin);
       if (overlap <= 1e-12) return 0;
       if (overlap < minOverlap) minOverlap = overlap;
     }

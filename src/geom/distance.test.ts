@@ -40,6 +40,10 @@ describe('convexPenetration', () => {
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.8, 0, 1.8, 1))).toBeCloseTo(0.2, 12);
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.3, 0.9, 0.6, 1.9))).toBeCloseTo(0.1, 12);
   });
+  it('uses the minimum translation, not the interval intersection, when intervals nest', () => {
+    expect(convexPenetration(rect(0, 0, 4, 4), rect(1, -1, 2, 5))).toBeCloseTo(2, 12);
+    expect(convexPenetration(rect(0, 0, 4.5, 1.8), rect(2.15, -1, 2.35, 3))).toBeCloseTo(2.35, 12);
+  });
 });
 
 describe('polygonDistance', () => {
@@ -61,5 +65,8 @@ describe('polygonDistance', () => {
   });
   it('containment is negative', () => {
     expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeLessThan(0);
+  });
+  it('containment depth is the shortest way out', () => {
+    expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeCloseTo(-2, 12);
   });
 });
