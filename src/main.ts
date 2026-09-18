@@ -1,46 +1,60 @@
 import taos from './vehicle/data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './vehicle/validate';
 import { deriveVehicle } from './vehicle/derive';
-import { getPreset, defaultParams } from './scene/presets';
 import { Renderer } from './render/renderer';
-import { ringInstancesFor, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import { WebGpuUnavailableError } from './render/gpu';
-import { transformPolygon } from './geom/polygon';
-import { guideCircles } from './geom/turning';
+import { App, type Snapshot } from './app';
+import type { DriveKey } from './ui/input';
+
+declare global {
+  interface Window {
+    __sim?: {
+      snapshot(): Snapshot;
+      readEnvelopeAt(x: number, y: number): Promise<number>;
+      setKey(key: DriveKey, down: boolean): void;
+    };
+  }
+}
+
+function showFatal(message: string): void {
+  const fatal = document.getElementById('fatal') as HTMLDivElement;
+  fatal.hidden = false;
+  fatal.textContent = message;
+}
 
 async function main(): Promise<void> {
   const canvas = document.getElementById('gpu') as HTMLCanvasElement;
-  const fatal = document.getElementById('fatal') as HTMLDivElement;
-  const vehicle = deriveVehicle(validateVehicleSpec(taos));
-  const preset = getPreset('parallel')!;
-  const scene = preset.build(defaultParams(preset));
+  let vehicle;
+  try {
+    vehicle = deriveVehicle(validateVehicleSpec(taos));
+  } catch (e) {
+    showFatal(`Vehicle data invalid: ${(e as Error).message}`);
+    return;
+  }
   let renderer: Renderer;
   try {
     renderer = await Renderer.create(canvas);
   } catch (e) {
-    fatal.hidden = false;
-    fatal.textContent = e instanceof WebGpuUnavailableError ? `${e.message} Use Chrome/Edge 113+, Safari 26+, or Firefox 141+.` : String(e);
+    showFatal(e instanceof WebGpuUnavailableError ? `${e.message} Use Chrome/Edge 113+, Safari 26+, or Firefox 141+.` : String(e));
     return;
   }
-  renderer.camera.fit(scene.bounds);
-  const staticPolys = scenePolygons(scene);
-  let first = true;
-  const draw = (): void => {
-    renderer.resize();
-    const footprints = first ? [transformPolygon(vehicle.body, { ...scene.start, x: scene.start.x - 3 })] : [];
-    first = false;
-    renderer.frame({
-      staticPolys,
-      staticVersion: 1,
-      dynamicPolys: vehiclePolygons(vehicle, scene.start, true),
-      rings: ringInstancesFor(guideCircles({ ...scene.start, steer: vehicle.maxSteer }, vehicle), 2 / renderer.camera.ppm),
-      newFootprints: footprints,
-      envelopeBounds: scene.bounds,
-      envelopeVersion: 1,
-    });
-    requestAnimationFrame(draw);
+  let lostOnce = false;
+  renderer.device.lost.then((info) => {
+    if (info.reason === 'destroyed') return;
+    if (lostOnce) showFatal(`GPU device lost twice (${info.message}). Reload the page.`);
+    else {
+      lostOnce = true;
+      location.reload();
+    }
+  });
+
+  const app = new App(canvas, renderer, vehicle);
+  window.__sim = {
+    snapshot: () => app.snapshot(),
+    readEnvelopeAt: (x, y) => renderer.readEnvelopeAt({ x, y }),
+    setKey: (key, down) => app.input.setKey(key, down),
   };
-  requestAnimationFrame(draw);
+  app.start();
 }
 
 void main();
