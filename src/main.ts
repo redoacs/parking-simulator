@@ -5,6 +5,7 @@ import { getPreset, defaultParams } from './scene/presets';
 import { Renderer } from './render/renderer';
 import { scenePolygons, vehiclePolygons } from './render/scenePolys';
 import { WebGpuUnavailableError } from './render/gpu';
+import { transformPolygon } from './geom/polygon';
 
 async function main(): Promise<void> {
   const canvas = document.getElementById('gpu') as HTMLCanvasElement;
@@ -22,14 +23,17 @@ async function main(): Promise<void> {
   }
   renderer.camera.fit(scene.bounds);
   const staticPolys = scenePolygons(scene);
+  let first = true;
   const draw = (): void => {
     renderer.resize();
+    const footprints = first ? [transformPolygon(vehicle.body, { ...scene.start, x: scene.start.x - 3 })] : [];
+    first = false;
     renderer.frame({
       staticPolys,
       staticVersion: 1,
       dynamicPolys: vehiclePolygons(vehicle, scene.start, true),
       rings: [],
-      newFootprints: [],
+      newFootprints: footprints,
       envelopeBounds: scene.bounds,
       envelopeVersion: 1,
     });
