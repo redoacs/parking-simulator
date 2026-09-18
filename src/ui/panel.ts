@@ -50,6 +50,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
         params = clampParams(def, params);
         input.value = String(params[p.key]);
         emit();
+        input.blur(); // a committed edit returns the keyboard to driving (DriveInput ignores keys aimed at inputs)
       });
       paramsBox.append(el('label', { class: 'param' }, `${p.label} (${p.unit})`, input));
     }
@@ -60,6 +61,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     params = defaultParams(getPreset(presetId)!);
     renderParams();
     emit();
+    presetSelect.blur(); // a focused select would turn the arrow keys into preset changes
   });
 
   const mirrorsInput = el('input', { type: 'checkbox' });
