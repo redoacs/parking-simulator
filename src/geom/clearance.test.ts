@@ -63,4 +63,16 @@ describe('isParked / parkedOffsets', () => {
     expect(rev.lateral).toBeCloseTo(-0.2, 9);
     expect(rev.headingErrorDeg).toBeCloseTo((0.05 * 180) / Math.PI, 9);
   });
+  it('measures against the long axis of a vertical target', () => {
+    const vertical: Scene = { ...scene, target: rect(-1.2, -3, 1.2, 3) };
+    const o = parkedOffsets({ x: 0.2, y: -1, theta: Math.PI / 2 + 0.05, steer: 0, speed: 0 }, vertical);
+    expect(o.lateral).toBeCloseTo(-0.2, 9);
+    expect(o.headingErrorDeg).toBeCloseTo((0.05 * 180) / Math.PI, 9);
+  });
+  it('wraps heading error into (-90°, 90°] from either side of the axis', () => {
+    const a = parkedOffsets({ x: -1, y: 0, theta: Math.PI - 0.05, steer: 0, speed: 0 }, scene);
+    expect(a.headingErrorDeg).toBeCloseTo((-0.05 * 180) / Math.PI, 9);
+    const b = parkedOffsets({ x: -1, y: 0, theta: -Math.PI + 0.05, steer: 0, speed: 0 }, scene);
+    expect(b.headingErrorDeg).toBeCloseTo((0.05 * 180) / Math.PI, 9);
+  });
 });
