@@ -3,9 +3,10 @@ import { validateVehicleSpec } from './vehicle/validate';
 import { deriveVehicle } from './vehicle/derive';
 import { getPreset, defaultParams } from './scene/presets';
 import { Renderer } from './render/renderer';
-import { scenePolygons, vehiclePolygons } from './render/scenePolys';
+import { ringInstancesFor, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import { WebGpuUnavailableError } from './render/gpu';
 import { transformPolygon } from './geom/polygon';
+import { guideCircles } from './geom/turning';
 
 async function main(): Promise<void> {
   const canvas = document.getElementById('gpu') as HTMLCanvasElement;
@@ -32,7 +33,7 @@ async function main(): Promise<void> {
       staticPolys,
       staticVersion: 1,
       dynamicPolys: vehiclePolygons(vehicle, scene.start, true),
-      rings: [],
+      rings: ringInstancesFor(guideCircles({ ...scene.start, steer: vehicle.maxSteer }, vehicle), 2 / renderer.camera.ppm),
       newFootprints: footprints,
       envelopeBounds: scene.bounds,
       envelopeVersion: 1,

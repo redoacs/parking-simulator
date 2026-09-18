@@ -5,6 +5,7 @@ import { EnvelopePass } from './envelope';
 import { CAMERA_UNIFORM_BYTES, createCameraBindGroupLayout, initGpu, type GpuContext } from './gpu';
 import { GridPipeline } from './grid';
 import { buildVertexData, PolygonBatch, PolygonPipeline, type ColoredPolygon, type RGBA } from './polygons';
+import { RingPipeline } from './rings';
 
 export interface RingInstance {
   center: Vec2;
@@ -33,6 +34,7 @@ export class Renderer {
   private readonly grid: GridPipeline;
   private readonly polys: PolygonPipeline;
   private readonly envelope: EnvelopePass;
+  private readonly rings: RingPipeline;
   private readonly staticBatch: PolygonBatch;
   private readonly dynamicBatch: PolygonBatch;
   private uploadedStaticVersion = -1;
@@ -46,6 +48,7 @@ export class Renderer {
     this.grid = new GridPipeline(device, format, layout);
     this.polys = new PolygonPipeline(device, format, layout);
     this.envelope = new EnvelopePass(device, format, layout);
+    this.rings = new RingPipeline(device, format, layout);
     this.staticBatch = new PolygonBatch(device);
     this.dynamicBatch = new PolygonBatch(device);
     this.resize();
@@ -84,6 +87,7 @@ export class Renderer {
       this.envelope.setBounds(input.envelopeBounds, device.limits.maxTextureDimension2D);
       this.envelopeVersion = input.envelopeVersion;
     }
+    this.rings.upload(input.rings);
 
     const encoder = device.createCommandEncoder();
     this.envelope.accumulate(encoder, input.newFootprints);
@@ -93,6 +97,7 @@ export class Renderer {
     this.grid.draw(pass, this.cameraBindGroup);
     this.polys.draw(pass, this.staticBatch, this.cameraBindGroup);
     this.envelope.composite(pass, this.cameraBindGroup);
+    this.rings.draw(pass, this.cameraBindGroup);
     this.polys.draw(pass, this.dynamicBatch, this.cameraBindGroup);
     pass.end();
     device.queue.submit([encoder.finish()]);

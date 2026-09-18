@@ -1,9 +1,11 @@
 import { rectFromSegment, transformPolygon } from '../geom/polygon';
 import type { Clearance } from '../geom/clearance';
+import type { GuideCircle } from '../geom/turning';
 import type { Scene, ObstacleKind } from '../scene/types';
 import type { VehicleState } from '../sim/model';
 import type { DerivedVehicle } from '../vehicle/derive';
 import type { ColoredPolygon, RGBA } from './polygons';
+import type { RingInstance } from './renderer';
 
 export const COLORS = {
   wall: [0.42, 0.45, 0.50, 1] as RGBA,
@@ -56,4 +58,8 @@ export function vehiclePolygons(v: DerivedVehicle, s: VehicleState, mirrors: boo
 export function rulerPolygon(c: Clearance): ColoredPolygon | null {
   if (c.distance <= 0) return null;
   return { polygon: rectFromSegment(c.pa, c.pb, 0.04), color: COLORS[bandFor(c.distance)] };
+}
+
+export function ringInstancesFor(guides: GuideCircle[], thicknessM: number): RingInstance[] {
+  return guides.map((g) => ({ center: g.center, radius: g.radius, thickness: thicknessM, color: COLORS.guide }));
 }
