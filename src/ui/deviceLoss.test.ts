@@ -21,8 +21,8 @@ describe('decideOnDeviceLoss', () => {
     expect(decideOnDeviceLoss(s, 1000 + DEVICE_LOSS_WINDOW_MS)).toBe('reload');
     expect(s.map.get(DEVICE_LOSS_KEY)).toBe(String(1000 + DEVICE_LOSS_WINDOW_MS));
   });
-  it('fails safe to the message when storage is unavailable or throws', () => {
-    expect(decideOnDeviceLoss(null, 5)).toBe('reload');
+  it('fails closed to the message when storage is unavailable or throws', () => {
+    expect(decideOnDeviceLoss(null, 5)).toBe('fatal');
     const throwing = { getItem: () => { throw new Error('blocked'); }, setItem: () => {} };
     expect(decideOnDeviceLoss(throwing, 5)).toBe('fatal');
   });

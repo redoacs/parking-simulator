@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     let store: KeyValueStore | null = null;
     try { store = window.sessionStorage; } catch { store = null; }
     if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
-    else showFatal(`The GPU device was lost again (${info.message}). Reloading did not help; try another browser or GPU.`);
+    else showFatal(`The GPU device was lost (${info.message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`);
   });
 
   const app = new App(canvas, renderer, vehicle);
