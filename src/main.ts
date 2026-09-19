@@ -23,6 +23,7 @@ declare global {
 
 function showFatal(message: string): void {
   const fatal = document.getElementById('fatal') as HTMLDivElement;
+  if (!fatal.hidden) return; // first message wins: it is the root cause, later ones are fallout
   fatal.hidden = false;
   fatal.textContent = message;
 }
@@ -92,4 +93,7 @@ async function main(): Promise<void> {
   app.start();
 }
 
-void main();
+// Never a silent blank canvas: anything that escapes main() or fires later lands in #fatal.
+window.addEventListener('error', (e) => showFatal(`Unexpected error: ${e.message}`));
+window.addEventListener('unhandledrejection', (e) => showFatal(`Unexpected error: ${String(e.reason)}`));
+main().catch((e) => showFatal(`Startup failed: ${String(e)}`));
