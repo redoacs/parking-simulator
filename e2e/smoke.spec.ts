@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('boots WebGPU, drives, records clearance and envelope', async ({ page }) => {
+test('boots, drives, records clearance and envelope', async ({ page }) => {
   await page.goto('/#p=parallel');
-  // Either outcome ends the wait, so a WebGPU failure surfaces its #fatal text instead of a bare timeout.
+  // Either outcome ends the wait, so a WebGL failure surfaces its #fatal text instead of a bare timeout.
   await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden, null, { timeout: 20_000 });
 
   const fatal = page.locator('#fatal');
@@ -106,15 +106,18 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   expect(reset.firstContactTime).toBeNull();
 });
 
-test('shows a message instead of a blank page without WebGPU', async ({ browser }) => {
+test('shows a message instead of a blank page without WebGL2', async ({ browser }) => {
   const context = await browser.newContext();
   await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'gpu', { value: undefined, configurable: true });
+    const real = Reflect.get(HTMLCanvasElement.prototype, 'getContext') as (this: HTMLCanvasElement, ...args: unknown[]) => unknown;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+      return args[0] === 'webgl2' ? null : real.apply(this, args);
+    } as typeof HTMLCanvasElement.prototype.getContext;
   });
   const page = await context.newPage();
   await page.goto('/');
   await expect(page.locator('#fatal')).toBeVisible();
-  await expect(page.locator('#fatal')).toContainText('WebGPU');
+  await expect(page.locator('#fatal')).toContainText('WebGL2');
   await context.close();
 });
 

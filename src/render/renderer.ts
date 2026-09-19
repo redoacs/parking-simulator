@@ -2,7 +2,7 @@ import type { Polygon, Rect } from '../geom/polygon';
 import type { Vec2 } from '../geom/vec2';
 import { Camera } from './camera';
 import { EnvelopePass } from './envelope';
-import { CAMERA_UNIFORM_BYTES, createCameraBindGroupLayout, initGpu, type GpuContext } from './gpu';
+import { CAMERA_BINDING, CAMERA_UNIFORM_BYTES, createUniformBuffer, initGl, writeUniformBuffer } from './gl';
 import { GridPipeline } from './grid';
 import { buildVertexData, PolygonBatch, PolygonPipeline, type ColoredPolygon, type RGBA } from './polygons';
 import { RingPipeline } from './rings';
@@ -29,8 +29,8 @@ export interface FrameInput {
 
 export class Renderer {
   readonly camera = new Camera();
-  private readonly cameraBuffer: GPUBuffer;
-  private readonly cameraBindGroup: GPUBindGroup;
+  private readonly canvas: HTMLCanvasElement;
+  private readonly cameraBuffer: WebGLBuffer;
   private readonly grid: GridPipeline;
   private readonly polys: PolygonPipeline;
   private readonly envelope: EnvelopePass;
@@ -40,31 +40,37 @@ export class Renderer {
   private uploadedStaticVersion = -1;
   private envelopeVersion = -1;
 
-  private constructor(private readonly gpu: GpuContext) {
-    const { device, format } = gpu;
-    const layout = createCameraBindGroupLayout(device);
-    this.cameraBuffer = device.createBuffer({ size: CAMERA_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.cameraBindGroup = device.createBindGroup({ layout, entries: [{ binding: 0, resource: { buffer: this.cameraBuffer } }] });
-    this.grid = new GridPipeline(device, format, layout);
-    this.polys = new PolygonPipeline(device, format, layout);
-    this.envelope = new EnvelopePass(device, format, layout);
-    this.rings = new RingPipeline(device, format, layout);
-    this.staticBatch = new PolygonBatch(device);
-    this.dynamicBatch = new PolygonBatch(device);
+  private constructor(
+    private readonly gl: WebGL2RenderingContext,
+    canvas: HTMLCanvasElement,
+  ) {
+    this.canvas = canvas;
+    this.cameraBuffer = createUniformBuffer(gl, CAMERA_UNIFORM_BYTES);
+    this.grid = new GridPipeline(gl);
+    this.polys = new PolygonPipeline(gl);
+    this.envelope = new EnvelopePass(gl);
+    this.rings = new RingPipeline(gl);
+    this.staticBatch = new PolygonBatch(gl);
+    this.dynamicBatch = new PolygonBatch(gl);
     this.resize();
   }
 
-  static async create(canvas: HTMLCanvasElement): Promise<Renderer> {
-    return new Renderer(await initGpu(canvas));
+  /** Stays async so callers need not change if a backend ever has to wait for its device again. */
+  static create(canvas: HTMLCanvasElement): Promise<Renderer> {
+    return Promise.resolve(new Renderer(initGl(canvas), canvas));
   }
 
-  get device(): GPUDevice {
-    return this.gpu.device;
+  /** The GL context was lost (GPU reset, driver update, too many contexts). Nothing is drawn after this. */
+  onContextLost(cb: (message: string) => void): void {
+    this.canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      cb('WebGL context lost');
+    });
   }
 
   /** Match the canvas backing store to its CSS size × devicePixelRatio. */
   resize(): void {
-    const c = this.gpu.canvas;
+    const c = this.canvas;
     const dpr = window.devicePixelRatio || 1;
     const w = Math.max(1, Math.round(c.clientWidth * dpr));
     const h = Math.max(1, Math.round(c.clientHeight * dpr));
@@ -76,51 +82,41 @@ export class Renderer {
   }
 
   frame(input: FrameInput): void {
-    const { device, context } = this.gpu;
+    const gl = this.gl;
     if (input.staticVersion !== this.uploadedStaticVersion) {
       this.staticBatch.upload(buildVertexData(input.staticPolys));
       this.uploadedStaticVersion = input.staticVersion;
     }
     this.dynamicBatch.upload(buildVertexData(input.dynamicPolys));
-    device.queue.writeBuffer(this.cameraBuffer, 0, this.camera.uniformData());
+    writeUniformBuffer(gl, this.cameraBuffer, this.camera.uniformData());
     if (input.envelopeVersion !== this.envelopeVersion) {
-      this.envelope.setBounds(input.envelopeBounds, device.limits.maxTextureDimension2D);
+      this.envelope.setBounds(input.envelopeBounds, gl.getParameter(gl.MAX_TEXTURE_SIZE) as number);
       this.envelopeVersion = input.envelopeVersion;
     }
     this.rings.upload(input.rings);
 
-    const encoder = device.createCommandEncoder();
-    this.envelope.accumulate(encoder, input.newFootprints);
-    const pass = encoder.beginRenderPass({
-      colorAttachments: [
-        {
-          view: context.getCurrentTexture().createView(),
-          loadOp: 'clear',
-          clearValue: { r: 0.078, g: 0.09, b: 0.11, a: 1 },
-          storeOp: 'store',
-        },
-      ],
-    });
-    this.grid.draw(pass, this.cameraBindGroup);
-    this.polys.draw(pass, this.staticBatch, this.cameraBindGroup);
-    this.envelope.composite(pass, this.cameraBindGroup);
-    this.rings.draw(pass, this.cameraBindGroup);
-    this.polys.draw(pass, this.dynamicBatch, this.cameraBindGroup);
-    pass.end();
-    device.queue.submit([encoder.finish()]);
+    this.envelope.accumulate(input.newFootprints);
+
+    // accumulate() may have changed the viewport and the camera block; the screen pass sets both.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.bindBufferBase(gl.UNIFORM_BUFFER, CAMERA_BINDING, this.cameraBuffer);
+    gl.clearColor(0.078, 0.09, 0.11, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    this.grid.draw();
+    this.polys.draw(this.staticBatch);
+    this.envelope.composite();
+    this.rings.draw();
+    this.polys.draw(this.dynamicBatch);
   }
 
   resetEnvelope(): void {
-    const encoder = this.device.createCommandEncoder();
-    this.envelope.clear(encoder);
-    this.device.queue.submit([encoder.finish()]);
+    this.envelope.clear();
   }
 
   rebuildEnvelope(footprints: Polygon[]): void {
-    const encoder = this.device.createCommandEncoder();
-    this.envelope.clear(encoder);
-    this.envelope.accumulate(encoder, footprints);
-    this.device.queue.submit([encoder.finish()]);
+    this.envelope.clear();
+    this.envelope.accumulate(footprints);
   }
 
   readEnvelopeAt(p: Vec2): Promise<number> {
