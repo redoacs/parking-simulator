@@ -50,6 +50,15 @@ describe.each(PRESETS.map((p) => [p.id, p] as const))('preset %s', (_id, def) =>
   });
 });
 
+describe('orientation (v1.2)', () => {
+  it.each(PRESETS.flatMap((def) => paramGrid(def).map((params, i) => [def.id, i, def, params] as const)))(
+    '%s param set %i starts with the car pointing up the screen',
+    (_id, _i, def, params) => {
+      expect(def.build(params).start.theta).toBeCloseTo(Math.PI / 2, 12);
+    },
+  );
+});
+
 describe('registry', () => {
   it('has three presets with unique ids', () => {
     expect(PRESETS.map((p) => p.id)).toEqual(['parallel', 'perpendicular', 'garage']);
@@ -86,7 +95,8 @@ describe('v1.1 preset fixes', () => {
     const scene = def.build({ ...defaultParams(def), bayDepth: 4.5 });
     const cars = scene.obstacles.filter((o) => o.kind === 'car');
     expect(cars).toHaveLength(2);
-    expect(boundsOf(cars.map((c) => c.polygon)).minY).toBeGreaterThanOrEqual(0);
+    // The scene is rotated so the aisle lies on the -x side of the bay: the bay line is the target's minX edge.
+    expect(boundsOf(cars.map((c) => c.polygon)).minX).toBeGreaterThanOrEqual(boundsOf([scene.target]).minX);
   });
   it('garage: clampParams reports the door and driveway widths the scene is built with', () => {
     const def = getPreset('garage')!;

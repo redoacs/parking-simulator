@@ -1,8 +1,10 @@
 import { rect, boundsOf } from '../../geom/polygon';
+import { rotateScene } from '../rotate';
 import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } from '../types';
 
 /**
- * Street runs along +x. Kerb along y = 0 (kerb body at y < 0). Spot occupies
+ * Described in the street frame, then rotated +90° so the car starts pointing up the screen (kerb still on its right).
+ * Street frame: street runs along +x. Kerb along y = 0 (kerb body at y < 0). Spot occupies
  * x in [0, spotLength], y in [0, spotWidth]. Neighbours front (x > spotLength)
  * and rear (x < 0). Lane above the parked row. Car starts in the lane beside
  * the front neighbour, heading +x, ready to reverse in. `kerb` (flag) omits the kerb when 0.
@@ -38,11 +40,14 @@ export const parallel: PresetDef = {
     const target = rect(0, 0, spotLength, spotWidth);
     const start = { x: spotLength + 0.6, y: spotWidth + laneWidth / 2, theta: 0, steer: 0, speed: 0 };
     const b = boundsOf([target, ...obstacles.map((o) => o.polygon)]);
-    return {
-      bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 4, maxY: b.maxY + BOUNDS_PAD },
-      obstacles,
-      target,
-      start,
-    };
+    return rotateScene(
+      {
+        bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 4, maxY: b.maxY + BOUNDS_PAD },
+        obstacles,
+        target,
+        start,
+      },
+      1,
+    );
   },
 };

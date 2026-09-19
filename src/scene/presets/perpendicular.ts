@@ -1,8 +1,10 @@
 import { rect, boundsOf } from '../../geom/polygon';
+import { rotateScene } from '../rotate';
 import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } from '../types';
 
 /**
- * Bay opens toward -y onto an aisle. Target x in [0, bayWidth], y in [0, bayDepth].
+ * Described in the aisle frame, then rotated -90° so the car starts pointing up the screen (bay still on its right).
+ * Aisle frame: bay opens toward -y onto an aisle. Target x in [0, bayWidth], y in [0, bayDepth].
  * Wall behind the bay row, neighbour cars either side, aisle y in [-aisleWidth, 0].
  * Car starts in the aisle heading -x (theta = pi), so the bay at +y is on its right, ready to reverse in.
  * `neighbours` (flag) omits the two neighbour cars when 0.
@@ -49,11 +51,14 @@ export const perpendicular: PresetDef = {
     const target = rect(0, 0, bayWidth, bayDepth);
     const start = { x: bayWidth / 2 + 4.5, y: -aisleWidth / 2, theta: Math.PI, steer: 0, speed: 0 };
     const b = boundsOf([target, ...obstacles.map((o) => o.polygon)]);
-    return {
-      bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 3, maxY: b.maxY + BOUNDS_PAD },
-      obstacles,
-      target,
-      start,
-    };
+    return rotateScene(
+      {
+        bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 3, maxY: b.maxY + BOUNDS_PAD },
+        obstacles,
+        target,
+        start,
+      },
+      -1,
+    );
   },
 };

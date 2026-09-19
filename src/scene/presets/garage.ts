@@ -1,4 +1,5 @@
 import { rect, boundsOf } from '../../geom/polygon';
+import { rotateScene } from '../rotate';
 import { BOUNDS_PAD, type Obstacle, type Params, type PresetDef, type Scene } from '../types';
 
 const WALL = 0.2;
@@ -13,7 +14,8 @@ function constrain(p: Params): Params {
  * Garage interior x in [0, interiorWidth], y in [0, interiorDepth], door in the
  * front wall (y = 0) centred on the interior. Driveway extends toward -y from
  * the door, flanked by kerbs. approachAngle 0: start on the driveway facing the
- * door. approachAngle 90: start on a street along x below the driveway, heading -x.
+ * door. approachAngle 90: start on a street along x below the driveway, heading -x;
+ * that scene is then rotated -90° so the car starts pointing up the screen with the garage on its right.
  */
 export const garage: PresetDef = {
   id: 'garage',
@@ -61,7 +63,7 @@ export const garage: PresetDef = {
       ? { x: iw / 2 + 7, y: -dvl - streetWidth / 2, theta: Math.PI, steer: 0, speed: 0 }
       : { x: iw / 2, y: -dvl - 3.6, theta: Math.PI / 2, steer: 0, speed: 0 }; // front bumper just short of the driveway
     const b = boundsOf([target, ...obstacles.map((o) => o.polygon)]);
-    return {
+    const scene: Scene = {
       bounds: {
         minX: b.minX - BOUNDS_PAD,
         minY: Math.min(b.minY, side ? -dvl - streetWidth : -dvl - 5) - BOUNDS_PAD,
@@ -72,5 +74,6 @@ export const garage: PresetDef = {
       target,
       start,
     };
+    return side ? rotateScene(scene, -1) : scene;
   },
 };
