@@ -197,6 +197,17 @@ Plain HTML/CSS/TS, no framework. Left panel:
 - URL hash encodes `preset` + params + mirrors flag so a scenario is
   shareable; parsed on load, written on change.
 
+**Two layouts, one DOM (since v1.2).** Wide — at least 900 px and a fine
+pointer — is the panel beside the scene, as above. Anything narrower or
+touch-driven gets the compact layout: the scene fills the screen; steering
+(◀ ▶, with rewind and centre) sits under the left thumb and forward/reverse
+(▲ ▼, with zoom −/+) under the right, so two thumbs can hold two controls at
+once; ☰ opens the same panel as a sheet, and a press on the scene closes it.
+One finger pans, two fingers pinch-zoom. Fit-to-view keeps the scene clear of
+the controls, using whichever free area shows it larger: above the thumb
+clusters (portrait) or between them (landscape, tablets). Supported from
+320 px wide.
+
 ## 7. Error handling
 
 - No WebGL2 context: replace the app with a message listing supported

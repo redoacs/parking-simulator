@@ -26,6 +26,9 @@ Requires a browser with WebGL2: any current Chrome, Edge, Firefox or Safari, des
 Arrows / WASD drive · C centre steering · Space stop · Z hold to rewind ·
 R reset · F fit view · drag to pan · wheel or the Zoom −/+ buttons to zoom.
 
+On a phone or tablet the scene fills the screen: steer with the left thumb (◀ ▶), drive with the right (▲ ▼), hold
+both to reverse while steering. One finger pans, two fingers pinch-zoom, ☰ opens the settings.
+
 ## Vehicle data
 
 Every dimension in `src/vehicle/data/*.json` carries its source URL. Figures
