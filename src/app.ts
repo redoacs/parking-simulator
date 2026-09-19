@@ -258,10 +258,14 @@ export class App {
     };
     this.canvas.addEventListener('pointerup', end);
     this.canvas.addEventListener('pointercancel', end);
-    this.canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const r = this.canvas.getBoundingClientRect();
-      cam.zoomAtCss(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.001));
-    }, { passive: false });
+    this.canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        const r = this.canvas.getBoundingClientRect();
+        cam.zoomAtCss(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.001));
+      },
+      { passive: false },
+    );
   }
 }

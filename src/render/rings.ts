@@ -10,7 +10,11 @@ export class RingPipeline {
   private capacityBytes = 64 * FLOATS_PER_INSTANCE * 4;
   private count = 0;
 
-  constructor(private readonly device: GPUDevice, format: GPUTextureFormat, cameraLayout: GPUBindGroupLayout) {
+  constructor(
+    private readonly device: GPUDevice,
+    format: GPUTextureFormat,
+    cameraLayout: GPUBindGroupLayout,
+  ) {
     const module = device.createShaderModule({ code: ringWgsl });
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({ bindGroupLayouts: [cameraLayout] }),

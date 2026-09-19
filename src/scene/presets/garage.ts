@@ -50,7 +50,11 @@ export const garage: PresetDef = {
     if (doorX0 > 1e-9) obstacles.push({ kind: 'wall', height: 2.4, polygon: rect(0, -WALL, doorX0, 0) });
     if (doorX1 < iw - 1e-9) obstacles.push({ kind: 'wall', height: 2.4, polygon: rect(doorX1, -WALL, iw, 0) });
     if (side) {
-      obstacles.push({ kind: 'line', height: 0, polygon: rect(iw / 2 - 12, -dvl - streetWidth - 0.05, iw / 2 + 12, -dvl - streetWidth + 0.05) });
+      obstacles.push({
+        kind: 'line',
+        height: 0,
+        polygon: rect(iw / 2 - 12, -dvl - streetWidth - 0.05, iw / 2 + 12, -dvl - streetWidth + 0.05),
+      });
     }
     const target = rect(0, 0, iw, id);
     const start = side

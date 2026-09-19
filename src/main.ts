@@ -41,15 +41,26 @@ async function main(): Promise<void> {
   try {
     renderer = await Renderer.create(canvas);
   } catch (e) {
-    showFatal(e instanceof WebGpuUnavailableError ? `${e.message} Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).` : String(e));
+    showFatal(
+      e instanceof WebGpuUnavailableError
+        ? `${e.message} Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).`
+        : String(e),
+    );
     return;
   }
   renderer.device.lost.then((info) => {
     if (info.reason === 'destroyed') return;
     let store: KeyValueStore | null = null;
-    try { store = window.sessionStorage; } catch { store = null; }
+    try {
+      store = window.sessionStorage;
+    } catch {
+      store = null;
+    }
     if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
-    else showFatal(`The GPU device was lost (${info.message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`);
+    else
+      showFatal(
+        `The GPU device was lost (${info.message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`,
+      );
   });
 
   const app = new App(canvas, renderer, vehicle);

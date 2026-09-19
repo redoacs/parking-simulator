@@ -27,10 +27,7 @@ export function deriveVehicle(spec: VehicleSpec): DerivedVehicle {
   const body = rect(-d.rearOverhang, -halfW, d.wheelbase + d.frontOverhang, halfW);
   const mx0 = d.mirrorLongitudinal - d.mirrorLength / 2;
   const mx1 = d.mirrorLongitudinal + d.mirrorLength / 2;
-  const mirrors: [Polygon, Polygon] = [
-    rect(mx0, halfW, mx1, d.widthMirrors / 2),
-    rect(mx0, -d.widthMirrors / 2, mx1, -halfW),
-  ];
+  const mirrors: [Polygon, Polygon] = [rect(mx0, halfW, mx1, d.widthMirrors / 2), rect(mx0, -d.widthMirrors / 2, mx1, -halfW)];
   const wheelOutline = rectCentered(0, 0, d.wheelDiameter, d.tireWidth);
   const wheels: Wheel[] = [
     { hub: vec(d.wheelbase, d.trackFront / 2), steered: true, outline: wheelOutline },

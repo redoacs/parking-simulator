@@ -39,8 +39,19 @@ export interface VehicleSpec {
 }
 
 export const NUMERIC_FIELDS = [
-  'length', 'widthBody', 'widthMirrors', 'height', 'wheelbase', 'frontOverhang', 'rearOverhang',
-  'trackFront', 'trackRear', 'tireWidth', 'wheelDiameter', 'mirrorLongitudinal', 'mirrorLength',
+  'length',
+  'widthBody',
+  'widthMirrors',
+  'height',
+  'wheelbase',
+  'frontOverhang',
+  'rearOverhang',
+  'trackFront',
+  'trackRear',
+  'tireWidth',
+  'wheelDiameter',
+  'mirrorLongitudinal',
+  'mirrorLength',
 ] as const;
 
 export type NumericField = (typeof NUMERIC_FIELDS)[number];

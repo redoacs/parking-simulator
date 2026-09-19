@@ -3,7 +3,11 @@ import { decodeHash, encodeHash } from './hash';
 
 describe('hash', () => {
   it('round-trips', () => {
-    const h = { presetId: 'garage', params: { doorWidth: 2.4, interiorWidth: 3, interiorDepth: 5.5, drivewayWidth: 3, drivewayLength: 5, approachAngle: 90 }, mirrors: false };
+    const h = {
+      presetId: 'garage',
+      params: { doorWidth: 2.4, interiorWidth: 3, interiorDepth: 5.5, drivewayWidth: 3, drivewayLength: 5, approachAngle: 90 },
+      mirrors: false,
+    };
     const s = encodeHash(h);
     expect(s).toContain('p=garage');
     expect(s).toContain('m=0');

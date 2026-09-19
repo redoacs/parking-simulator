@@ -6,9 +6,7 @@ import { type Vec2, vec } from './vec2';
 /** Lateral (a) and longitudinal (b) offsets of the turning-circle reference point from the rear-axle centre. */
 function referenceOffsets(dims: VehicleDims): { a: number; b: number } {
   const L = dims.wheelbase;
-  return dims.turningCircle.kind === 'kerb'
-    ? { a: dims.trackFront / 2, b: L }
-    : { a: dims.widthBody / 2, b: L + dims.frontOverhang };
+  return dims.turningCircle.kind === 'kerb' ? { a: dims.trackFront / 2, b: L } : { a: dims.widthBody / 2, b: L + dims.frontOverhang };
 }
 
 /** Smallest turning-circle diameter the reference point can trace (R → 0⁺). Below this the spec is inconsistent. */
@@ -27,7 +25,9 @@ export function steerFromTurningCircle(dims: VehicleDims): number {
   const { diameter } = dims.turningCircle;
   const min = minimumTurningDiameter(dims);
   if (!(diameter > min)) {
-    throw new RangeError(`turning circle ${diameter} m is not feasible for a ${dims.turningCircle.kind} reference point; must exceed ${min.toFixed(3)} m`);
+    throw new RangeError(
+      `turning circle ${diameter} m is not feasible for a ${dims.turningCircle.kind} reference point; must exceed ${min.toFixed(3)} m`,
+    );
   }
   const { a, b } = referenceOffsets(dims);
   const half = diameter / 2;

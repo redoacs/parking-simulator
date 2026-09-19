@@ -18,7 +18,11 @@ export interface PanelOptions {
   bind(button: HTMLElement, key: DriveKey): void;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
+function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string> = {},
+  ...children: (Node | string)[]
+): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   e.append(...children);
@@ -28,7 +32,12 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 function citedRow(label: string, c: Cited<number>): HTMLElement {
   const link = el('a', { href: c.source.url, target: '_blank', rel: 'noopener', class: 'source', title: c.source.note ?? '' }, 'src');
   const badge = isUnverified(c) ? el('span', { class: 'unverified' }, 'unverified') : '';
-  return el('div', { class: 'readout' }, el('span', {}, label, badge), el('span', { class: 'value' }, `${(c.value * 1000).toFixed(0)} mm `, link));
+  return el(
+    'div',
+    { class: 'readout' },
+    el('span', {}, label, badge),
+    el('span', { class: 'value' }, `${(c.value * 1000).toFixed(0)} mm `, link),
+  );
 }
 
 export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h: HashState): void; readoutSection: HTMLElement } {
@@ -48,7 +57,13 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     const def = getPreset(presetId)!;
     const inputs = new Map<string, HTMLInputElement>();
     for (const p of def.params) {
-      const input = el('input', { type: 'number', min: String(p.min), max: String(p.max), step: String(p.step), value: String(params[p.key] ?? p.default) });
+      const input = el('input', {
+        type: 'number',
+        min: String(p.min),
+        max: String(p.max),
+        step: String(p.step),
+        value: String(params[p.key] ?? p.default),
+      });
       inputs.set(p.key, input);
       input.addEventListener('change', () => {
         // An emptied or unparseable field reads as '': keep the current value rather than let it clamp to the minimum.
@@ -85,14 +100,42 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   });
   const d = o.vehicle.spec;
   const labels: Record<(typeof NUMERIC_FIELDS)[number], string> = {
-    length: 'Length', widthBody: 'Width (body)', widthMirrors: 'Width (mirrors)', height: 'Height', wheelbase: 'Wheelbase',
-    frontOverhang: 'Front overhang', rearOverhang: 'Rear overhang', trackFront: 'Track front', trackRear: 'Track rear',
-    tireWidth: 'Tyre width', wheelDiameter: 'Wheel diameter', mirrorLongitudinal: 'Mirror position', mirrorLength: 'Mirror length',
+    length: 'Length',
+    widthBody: 'Width (body)',
+    widthMirrors: 'Width (mirrors)',
+    height: 'Height',
+    wheelbase: 'Wheelbase',
+    frontOverhang: 'Front overhang',
+    rearOverhang: 'Rear overhang',
+    trackFront: 'Track front',
+    trackRear: 'Track rear',
+    tireWidth: 'Tyre width',
+    wheelDiameter: 'Wheel diameter',
+    mirrorLongitudinal: 'Mirror position',
+    mirrorLength: 'Mirror length',
   };
-  const vehicleCard = el('fieldset', {}, el('legend', {}, `${d.name} · ${d.market} ${d.modelYear}`),
+  const vehicleCard = el(
+    'fieldset',
+    {},
+    el('legend', {}, `${d.name} · ${d.market} ${d.modelYear}`),
     ...NUMERIC_FIELDS.map((f) => citedRow(labels[f], d[f])),
-    el('div', { class: 'readout' }, el('span', {}, `Turning circle (${d.turningCircle.value.kind})`), el('span', { class: 'value' }, `${d.turningCircle.value.diameter.toFixed(2)} m `, el('a', { href: d.turningCircle.source.url, target: '_blank', rel: 'noopener', class: 'source' }, 'src'))),
-    el('div', { class: 'readout' }, el('span', {}, 'Max steer (derived)'), el('span', { class: 'value' }, `${((o.vehicle.maxSteer * 180) / Math.PI).toFixed(1)}°`)),
+    el(
+      'div',
+      { class: 'readout' },
+      el('span', {}, `Turning circle (${d.turningCircle.value.kind})`),
+      el(
+        'span',
+        { class: 'value' },
+        `${d.turningCircle.value.diameter.toFixed(2)} m `,
+        el('a', { href: d.turningCircle.source.url, target: '_blank', rel: 'noopener', class: 'source' }, 'src'),
+      ),
+    ),
+    el(
+      'div',
+      { class: 'readout' },
+      el('span', {}, 'Max steer (derived)'),
+      el('span', { class: 'value' }, `${((o.vehicle.maxSteer * 180) / Math.PI).toFixed(1)}°`),
+    ),
     el('label', { class: 'param' }, 'Include mirrors', mirrorsInput),
   );
 
@@ -110,16 +153,31 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
   zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
   const pad = el('div', { class: 'pad' });
-  const padKeys: Array<[string, DriveKey]> = [['◀', 'left'], ['▲', 'forward'], ['▶', 'right'], ['⟲ rewind', 'rewind'], ['▼', 'reverse'], ['centre', 'centre']];
+  const padKeys: Array<[string, DriveKey]> = [
+    ['◀', 'left'],
+    ['▲', 'forward'],
+    ['▶', 'right'],
+    ['⟲ rewind', 'rewind'],
+    ['▼', 'reverse'],
+    ['centre', 'centre'],
+  ];
   for (const [label, key] of padKeys) {
     const b = el('button', { type: 'button' }, label);
     o.bind(b, key);
     pad.append(b);
   }
-  const controls = el('fieldset', {}, el('legend', {}, 'Drive'),
-    el('label', { class: 'param' }, 'Time scale', timeScale), pad,
+  const controls = el(
+    'fieldset',
+    {},
+    el('legend', {}, 'Drive'),
+    el('label', { class: 'param' }, 'Time scale', timeScale),
+    pad,
     el('div', { class: 'pad two' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
-    el('p', { class: 'source' }, 'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom'),
+    el(
+      'p',
+      { class: 'source' },
+      'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
+    ),
   );
 
   const readoutSection = el('fieldset', {}, el('legend', {}, 'Readouts'));

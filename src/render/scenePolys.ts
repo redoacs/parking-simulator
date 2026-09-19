@@ -8,16 +8,16 @@ import type { ColoredPolygon, RGBA } from './polygons';
 import type { RingInstance } from './renderer';
 
 export const COLORS = {
-  wall: [0.42, 0.45, 0.50, 1] as RGBA,
-  kerb: [0.60, 0.56, 0.42, 1] as RGBA,
+  wall: [0.42, 0.45, 0.5, 1] as RGBA,
+  kerb: [0.6, 0.56, 0.42, 1] as RGBA,
   car: [0.29, 0.33, 0.39, 1] as RGBA,
-  line: [0.90, 0.91, 0.93, 0.8] as RGBA,
-  targetFill: [0.24, 0.86, 0.52, 0.10] as RGBA,
+  line: [0.9, 0.91, 0.93, 0.8] as RGBA,
+  targetFill: [0.24, 0.86, 0.52, 0.1] as RGBA,
   targetEdge: [0.24, 0.86, 0.52, 0.8] as RGBA,
   body: [0.23, 0.51, 0.96, 0.92] as RGBA,
   mirror: [0.38, 0.65, 0.98, 0.92] as RGBA,
   wheel: [0.08, 0.08, 0.09, 1] as RGBA,
-  envelope: [1.0, 0.55, 0.10, 0.35] as RGBA,
+  envelope: [1.0, 0.55, 0.1, 0.35] as RGBA,
   ok: [0.24, 0.86, 0.52, 1] as RGBA,
   warn: [0.96, 0.73, 0.26, 1] as RGBA,
   bad: [1.0, 0.36, 0.36, 1] as RGBA,

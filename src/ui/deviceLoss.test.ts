@@ -23,7 +23,12 @@ describe('decideOnDeviceLoss', () => {
   });
   it('fails closed to the message when storage is unavailable or throws', () => {
     expect(decideOnDeviceLoss(null, 5)).toBe('fatal');
-    const throwing = { getItem: () => { throw new Error('blocked'); }, setItem: () => {} };
+    const throwing = {
+      getItem: () => {
+        throw new Error('blocked');
+      },
+      setItem: () => {},
+    };
     expect(decideOnDeviceLoss(throwing, 5)).toBe('fatal');
   });
 });

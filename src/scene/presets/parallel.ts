@@ -21,12 +21,19 @@ export const parallel: PresetDef = {
     const spotWidth = p.spotWidth!;
     const laneWidth = p.laneWidth!;
     const carY0 = (spotWidth - NEIGHBOUR_CAR.width) / 2;
-    const kerb: Obstacle[] = p.kerb! > 0 ? [{ kind: 'kerb', height: 0.12, polygon: rect(-NEIGHBOUR_CAR.length - 3, -0.3, spotLength + NEIGHBOUR_CAR.length + 3, 0) }] : [];
+    const kerb: Obstacle[] =
+      p.kerb! > 0
+        ? [{ kind: 'kerb', height: 0.12, polygon: rect(-NEIGHBOUR_CAR.length - 3, -0.3, spotLength + NEIGHBOUR_CAR.length + 3, 0) }]
+        : [];
     const obstacles: Obstacle[] = [
       ...kerb,
       { kind: 'car', height: 1.6, polygon: rect(-NEIGHBOUR_CAR.length, carY0, 0, carY0 + NEIGHBOUR_CAR.width) },
       { kind: 'car', height: 1.6, polygon: rect(spotLength, carY0, spotLength + NEIGHBOUR_CAR.length, carY0 + NEIGHBOUR_CAR.width) },
-      { kind: 'line', height: 0, polygon: rect(-NEIGHBOUR_CAR.length - 3, spotWidth + laneWidth, spotLength + NEIGHBOUR_CAR.length + 3, spotWidth + laneWidth + 0.1) },
+      {
+        kind: 'line',
+        height: 0,
+        polygon: rect(-NEIGHBOUR_CAR.length - 3, spotWidth + laneWidth, spotLength + NEIGHBOUR_CAR.length + 3, spotWidth + laneWidth + 0.1),
+      },
     ];
     const target = rect(0, 0, spotLength, spotWidth);
     const start = { x: spotLength + 0.6, y: spotWidth + laneWidth / 2, theta: 0, steer: 0, speed: 0 };
