@@ -33,7 +33,7 @@ export function segmentDistance(a0: Vec2, a1: Vec2, b0: Vec2, b1: Vec2): { d: nu
     const p = { x: a0.x + r.x * t, y: a0.y + r.y * t };
     return { d: 0, pa: p, pb: p };
   }
-  const candidates: Array<[Vec2, Vec2]> = [
+  const candidates: [Vec2, Vec2][] = [
     [a0, closestPointOnSegment(a0, b0, b1)],
     [a1, closestPointOnSegment(a1, b0, b1)],
     [closestPointOnSegment(b0, a0, a1), b0],

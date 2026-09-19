@@ -153,7 +153,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
   zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
   const pad = el('div', { class: 'pad' });
-  const padKeys: Array<[string, DriveKey]> = [
+  const padKeys: [string, DriveKey][] = [
     ['◀', 'left'],
     ['▲', 'forward'],
     ['▶', 'right'],

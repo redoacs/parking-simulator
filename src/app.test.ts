@@ -22,7 +22,9 @@ function harness(historySeconds?: number): {
   vi.stubGlobal(
     'ResizeObserver',
     class {
-      observe(): void {}
+      observe(): void {
+        // stub
+      }
     },
   );
   vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {

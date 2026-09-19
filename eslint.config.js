@@ -1,7 +1,21 @@
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-export default tseslint.config(
-  { ignores: ['dist/', 'node_modules/', '.worktrees/', 'playwright-report/', 'test-results/'] },
-  ...tseslint.configs.recommended,
-  { rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
+export default defineConfig(
+  globalIgnores(['dist/', 'node_modules/', '.worktrees/', 'playwright-report/', 'test-results/']),
+  tseslint.configs.strictTypeChecked,
+  tseslint.configs.stylisticTypeChecked,
+  { languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } } },
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // tsconfig sets noUncheckedIndexedAccess, so `!` on an index or a Params lookup is the idiom here, not a smell.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      // `() => o.onReset()` is the house style for handlers; the rule still catches void values used elsewhere.
+      '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
+    },
+  },
+  // Last, so nothing above re-enables a type-aware rule for it. This file is the only .js and is not in tsconfig.
+  { files: ['**/*.js'], extends: [tseslint.configs.disableTypeChecked] },
 );
