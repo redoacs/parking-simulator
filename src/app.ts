@@ -34,6 +34,8 @@ export interface Snapshot {
 export class App {
   readonly input = new DriveInput();
   onSnapshot?: (s: Snapshot) => void;
+  /** A press on the scene itself, not on a control laid over it. The compact layout uses it to close the settings sheet. */
+  onCanvasPress?: () => void;
 
   private presetId = PRESETS[0]!.id;
   private params: Params = defaultParams(PRESETS[0]!);
@@ -238,23 +240,32 @@ export class App {
 
   private attachCameraControls(): void {
     const cam = this.renderer.camera;
-    let dragging = false;
-    let lastX = 0;
-    let lastY = 0;
+    // Active pointers in canvas-relative CSS pixels: one pans, two pinch, any further ones are ignored.
+    const pointers = new Map<number, { x: number; y: number }>();
+    const at = (e: PointerEvent): { x: number; y: number } => {
+      const r = this.canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
     this.canvas.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      this.onCanvasPress?.();
+      if (pointers.size >= 2) return;
+      pointers.set(e.pointerId, at(e));
       this.canvas.setPointerCapture(e.pointerId);
     });
     this.canvas.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      cam.panByCss(e.clientX - lastX, e.clientY - lastY);
-      lastX = e.clientX;
-      lastY = e.clientY;
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      const now = at(e);
+      if (pointers.size === 1) {
+        cam.panByCss(now.x - prev.x, now.y - prev.y);
+      } else {
+        const other = [...pointers].find(([id]) => id !== e.pointerId)![1];
+        cam.pinchCss(prev, other, now, other);
+      }
+      pointers.set(e.pointerId, now);
     });
-    const end = (): void => {
-      dragging = false;
+    const end = (e: PointerEvent): void => {
+      pointers.delete(e.pointerId);
     };
     this.canvas.addEventListener('pointerup', end);
     this.canvas.addEventListener('pointercancel', end);

@@ -67,4 +67,53 @@ describe('Camera', () => {
     expect(c.cy).toBe(5);
     expect(c.ppm).toBeCloseTo((800 / 40) * 0.9, 12);
   });
+
+  describe('pinchCss', () => {
+    it('a spread about a fixed midpoint zooms by the distance ratio and keeps the midpoint fixed', () => {
+      const c = cam();
+      const under = c.screenToWorld(400, 300);
+      c.pinchCss({ x: 350, y: 300 }, { x: 450, y: 300 }, { x: 300, y: 300 }, { x: 500, y: 300 });
+      expect(c.ppm).toBeCloseTo(200, 9);
+      const after = c.screenToWorld(400, 300);
+      expect(after.x).toBeCloseTo(under.x, 9);
+      expect(after.y).toBeCloseTo(under.y, 9);
+    });
+
+    it('keeps the world point under each finger under that finger', () => {
+      const c = cam();
+      const a0 = { x: 200, y: 150 };
+      const b0 = { x: 500, y: 450 };
+      const wa = c.screenToWorld(a0.x, a0.y);
+      const wb = c.screenToWorld(b0.x, b0.y);
+      const a1 = { x: 140, y: 120 }; // spread along the same line, and the pair also drifts
+      const b1 = { x: 590, y: 570 };
+      c.pinchCss(a0, b0, a1, b1);
+      const ca = c.worldToCss(wa);
+      const cb = c.worldToCss(wb);
+      expect(ca.x).toBeCloseTo(a1.x, 6);
+      expect(ca.y).toBeCloseTo(a1.y, 6);
+      expect(cb.x).toBeCloseTo(b1.x, 6);
+      expect(cb.y).toBeCloseTo(b1.y, 6);
+    });
+
+    it('two fingers moving together pan without zooming', () => {
+      const c = cam();
+      const under = c.screenToWorld(300, 300);
+      c.pinchCss({ x: 250, y: 300 }, { x: 350, y: 300 }, { x: 290, y: 320 }, { x: 390, y: 340 - 20 });
+      expect(c.ppm).toBeCloseTo(100, 9);
+      const moved = c.worldToCss(under);
+      expect(moved.x).toBeCloseTo(340, 9);
+      expect(moved.y).toBeCloseTo(320, 9);
+    });
+
+    it('coincident fingers never produce a non-finite camera', () => {
+      const c = cam();
+      c.pinchCss({ x: 100, y: 100 }, { x: 100, y: 100 }, { x: 100, y: 100 }, { x: 180, y: 100 });
+      c.pinchCss({ x: 100, y: 100 }, { x: 180, y: 100 }, { x: 140, y: 100 }, { x: 140, y: 100 });
+      expect(Number.isFinite(c.ppm)).toBe(true);
+      expect(Number.isFinite(c.cx)).toBe(true);
+      expect(Number.isFinite(c.cy)).toBe(true);
+      expect(c.ppm).toBeGreaterThan(0);
+    });
+  });
 });
