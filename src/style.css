@@ -18,6 +18,7 @@ button:active { background: #3a4354; }
 .readout .value { font-variant-numeric: tabular-nums; }
 .band-ok { color: var(--ok); } .band-warn { color: var(--warn); } .band-bad { color: var(--bad); font-weight: 600; }
 .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pad.two { grid-template-columns: repeat(2, 1fr); }
 .pad button { padding: 10px 0; }
 .unverified { color: var(--warn); font-size: 11px; margin-left: 4px; }
 .source { color: var(--muted); font-size: 11px; }

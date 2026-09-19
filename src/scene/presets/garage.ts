@@ -1,7 +1,13 @@
 import { rect, boundsOf } from '../../geom/polygon';
-import { BOUNDS_PAD, type Obstacle, type PresetDef, type Scene } from '../types';
+import { BOUNDS_PAD, type Obstacle, type Params, type PresetDef, type Scene } from '../types';
 
 const WALL = 0.2;
+
+/** The door cannot exceed the interior; the driveway is at least as wide as the door. */
+function constrain(p: Params): Params {
+  const doorWidth = Math.min(p.doorWidth!, p.interiorWidth!);
+  return { ...p, doorWidth, drivewayWidth: Math.max(p.drivewayWidth!, doorWidth) };
+}
 
 /**
  * Garage interior x in [0, interiorWidth], y in [0, interiorDepth], door in the
@@ -16,15 +22,17 @@ export const garage: PresetDef = {
     { key: 'doorWidth', label: 'Door opening', unit: 'm', min: 2.2, max: 3.0, step: 0.05, default: 2.4 },
     { key: 'interiorWidth', label: 'Interior width', unit: 'm', min: 2.6, max: 4.0, step: 0.05, default: 3.0 },
     { key: 'interiorDepth', label: 'Interior depth', unit: 'm', min: 5.0, max: 7.0, step: 0.1, default: 5.5 },
-    { key: 'drivewayWidth', label: 'Driveway width', unit: 'm', min: 2.5, max: 4.0, step: 0.1, default: 3.0 },
+    { key: 'drivewayWidth', label: 'Driveway width', unit: 'm', min: 2.5, max: 4.0, step: 0.05, default: 3.0 }, // same grid as doorWidth: constrain copies one into the other
     { key: 'drivewayLength', label: 'Driveway length', unit: 'm', min: 3.0, max: 8.0, step: 0.1, default: 5.0 },
     { key: 'approachAngle', label: 'Approach', unit: 'deg', min: 0, max: 90, step: 90, default: 0 },
   ],
-  build(p): Scene {
+  constrain,
+  build(raw): Scene {
+    const p = constrain(raw);
     const iw = p.interiorWidth!;
     const id = p.interiorDepth!;
-    const dw = Math.min(p.doorWidth!, iw); // door cannot exceed the interior
-    const dvw = Math.max(p.drivewayWidth!, dw); // driveway at least as wide as the door
+    const dw = p.doorWidth!;
+    const dvw = p.drivewayWidth!;
     const dvl = p.drivewayLength!;
     const side = p.approachAngle! >= 45;
     const doorX0 = (iw - dw) / 2;

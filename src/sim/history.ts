@@ -7,6 +7,7 @@ export class StateHistory {
   private readonly buf: Float64Array;
   private start = 0;
   private count = 0;
+  private dropped = 0;
 
   constructor(public readonly capacity: number) {
     this.buf = new Float64Array(capacity * STRIDE);
@@ -16,11 +17,19 @@ export class StateHistory {
     return this.count;
   }
 
+  /** States dropped off the old end; `evicted + length` is a position that survives eviction. */
+  get evicted(): number {
+    return this.dropped;
+  }
+
   push(s: VehicleState): void {
     const idx = (this.start + this.count) % this.capacity;
     this.write(idx, s);
     if (this.count < this.capacity) this.count++;
-    else this.start = (this.start + 1) % this.capacity;
+    else {
+      this.start = (this.start + 1) % this.capacity;
+      this.dropped++;
+    }
   }
 
   pop(): VehicleState | undefined {
@@ -41,6 +50,7 @@ export class StateHistory {
   clear(): void {
     this.start = 0;
     this.count = 0;
+    this.dropped = 0;
   }
 
   forEach(fn: (s: VehicleState, i: number) => void): void {

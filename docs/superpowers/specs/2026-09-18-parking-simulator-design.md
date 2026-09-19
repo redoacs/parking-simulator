@@ -187,7 +187,7 @@ Plain HTML/CSS/TS, no framework. Left panel:
 - Readouts: min clearance in cm (green ≥ 30, amber 10–30, red < 10, "CONTACT"
   ≤ 0 with the obstacle kind), steer angle (°), speed (km/h), sim time,
   time-scale slider, parked status with final offsets.
-- Buttons: reset, rewind (hold), fit view, on-screen drive controls.
+- Buttons: reset, rewind (hold), fit view, zoom −/+ (touch has no wheel), on-screen drive controls.
 - URL hash encodes `preset` + params + mirrors flag so a scenario is
   shareable; parsed on load, written on change.
 

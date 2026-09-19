@@ -91,3 +91,39 @@ test('shows a message instead of a blank page without WebGPU', async ({ browser 
   await expect(page.locator('#fatal')).toContainText('WebGPU');
   await context.close();
 });
+
+test('panel: cross-param corrections are shown, empty input keeps its value, zoom buttons zoom', async ({ page }) => {
+  await page.goto('/#p=garage');
+  await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden, null, { timeout: 20_000 });
+  await expect(page.locator('#fatal')).toBeHidden();
+  const field = (label: string) => page.locator('label.param', { hasText: label }).locator('input');
+
+  // Door 3.0 m cannot fit a 2.6 m interior: the door field, the built scene and the hash all show 2.6.
+  await field('Door opening').fill('3');
+  await field('Door opening').press('Enter');
+  await field('Interior width').fill('2.6');
+  await field('Interior width').press('Enter');
+  await expect(field('Door opening')).toHaveValue('2.6');
+  expect((await page.evaluate(() => window.__sim!.snapshot().params)).doorWidth).toBe(2.6);
+  expect(page.url()).toContain('doorWidth=2.6');
+
+  // Clearing a field is not an edit: it must not commit the minimum (5.0) or restart the run.
+  await page.evaluate(() => window.__sim!.setKey('forward', true));
+  await page.waitForFunction(() => window.__sim!.snapshot().historyLength > 30, null, { timeout: 15_000 });
+  await page.evaluate(() => window.__sim!.setKey('forward', false));
+  await field('Interior depth').fill('');
+  await field('Interior depth').press('Enter');
+  await expect(field('Interior depth')).toHaveValue('5.5');
+  const kept = await page.evaluate(() => window.__sim!.snapshot());
+  expect(kept.params.interiorDepth).toBe(5.5);
+  expect(kept.historyLength).toBeGreaterThan(30);
+
+  const stage = page.locator('#gpu');
+  const before = await stage.screenshot();
+  await page.getByRole('button', { name: 'Zoom +' }).click();
+  await page.waitForTimeout(200);
+  expect((await stage.screenshot()).equals(before)).toBe(false);
+  await page.getByRole('button', { name: 'Fit view' }).click();
+  await page.waitForTimeout(200);
+  expect((await stage.screenshot()).equals(before)).toBe(true);
+});

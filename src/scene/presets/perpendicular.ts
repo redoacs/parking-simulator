@@ -21,7 +21,8 @@ export const perpendicular: PresetDef = {
     const bayDepth = p.bayDepth!;
     const aisleWidth = p.aisleWidth!;
     const carX = (bayWidth - NEIGHBOUR_CAR.width) / 2;
-    const carY0 = bayDepth - NEIGHBOUR_CAR.length - 0.25;
+    // 0.25 m off the back wall, but never nosing past the bay line into the aisle.
+    const carY0 = Math.max(0, bayDepth - NEIGHBOUR_CAR.length - 0.25);
     const rowX0 = -2 * bayWidth;
     const rowX1 = 3 * bayWidth;
     const neighbours: Obstacle[] =

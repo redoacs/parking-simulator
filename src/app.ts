@@ -26,7 +26,7 @@ export interface Snapshot {
   contact: boolean;
   firstContactTime: number | null;
   parked: boolean;
-  parkedOffsets: { lateral: number; headingErrorDeg: number } | null;
+  parkedOffsets: { left: number; right: number; headingErrorDeg: number } | null;
   simTime: number;
   historyLength: number;
 }
@@ -41,16 +41,18 @@ export class App {
   private mirrors = true;
   private timeScale = 1;
   private state: VehicleState = this.scene.start;
-  private readonly history = new StateHistory(Math.round(HISTORY_SECONDS / SIM_DT));
+  private readonly history: StateHistory;
   private simTime = 0;
   private firstContactTime: number | null = null;
-  private firstContactHistoryLength: number | null = null;
+  /** `history.evicted + history.length` at first contact: a length alone shifts once the ring evicts. */
+  private firstContactPosition: number | null = null;
   private clearance: Clearance | null = null;
   private staticPolys: ColoredPolygon[] = scenePolygons(this.scene);
   private staticVersion = 1;
   private envelopeVersion = 1;
   private pendingFootprints: Polygon[] = [];
   private accumulator = 0;
+  private rewindAccumulator = 0;
   private lastFrame = 0;
   private wasRewinding = false;
   private readonly simParams: SimParams;
@@ -59,7 +61,9 @@ export class App {
     private readonly canvas: HTMLCanvasElement,
     private readonly renderer: Renderer,
     private readonly vehicle: DerivedVehicle,
+    historySeconds = HISTORY_SECONDS,
   ) {
+    this.history = new StateHistory(Math.round(historySeconds / SIM_DT));
     this.simParams = simParamsFor(vehicle);
     this.attachCameraControls();
     this.input.attach(window);
@@ -92,11 +96,17 @@ export class App {
     this.history.clear();
     this.simTime = 0;
     this.firstContactTime = null;
-    this.firstContactHistoryLength = null;
+    this.firstContactPosition = null;
     this.pendingFootprints = [];
     this.accumulator = 0;
+    this.rewindAccumulator = 0;
     this.renderer.resetEnvelope();
     this.updateClearance();
+  }
+
+  zoomBy(factor: number): void {
+    const r = this.canvas.getBoundingClientRect();
+    this.renderer.camera.zoomAtCss(r.width / 2, r.height / 2, factor);
   }
 
   fitView(): void {
@@ -118,7 +128,7 @@ export class App {
       contact: this.clearance !== null && this.clearance.distance <= 0,
       firstContactTime: this.firstContactTime,
       parked,
-      parkedOffsets: parked ? parkedOffsets(this.state, this.scene) : null,
+      parkedOffsets: parked ? parkedOffsets(body, this.state, this.scene) : null,
       simTime: this.simTime,
       historyLength: this.history.length,
     };
@@ -145,6 +155,7 @@ export class App {
       if (this.wasRewinding) {
         this.renderer.rebuildEnvelope(this.allFootprints());
         this.wasRewinding = false;
+        this.rewindAccumulator = 0;
       }
       this.simulate(frameDt * this.timeScale);
     }
@@ -189,15 +200,19 @@ export class App {
   }
 
   private rewind(frameDt: number): void {
-    const n = Math.max(1, Math.round((frameDt * REWIND_SPEED) / SIM_DT));
-    for (let i = 0; i < n; i++) {
+    // Carry the fraction so rewind speed does not depend on the display refresh rate.
+    this.rewindAccumulator += frameDt * REWIND_SPEED;
+    while (this.rewindAccumulator >= SIM_DT) {
+      this.rewindAccumulator -= SIM_DT;
+      // After eviction the state before the oldest one is gone: stop on it rather than fall back to the start pose.
+      if (this.history.evicted > 0 && this.history.length === 1) break;
       if (this.history.pop() === undefined) break;
       this.simTime = Math.max(0, this.simTime - SIM_DT);
     }
     this.state = { ...(this.history.last() ?? this.scene.start), speed: 0 };
-    if (this.firstContactHistoryLength !== null && this.history.length < this.firstContactHistoryLength) {
+    if (this.firstContactPosition !== null && this.history.evicted + this.history.length < this.firstContactPosition) {
       this.firstContactTime = null;
-      this.firstContactHistoryLength = null;
+      this.firstContactPosition = null;
     }
     this.updateClearance();
   }
@@ -217,7 +232,7 @@ export class App {
     this.clearance = checkClearance(worldOutline(this.vehicle, this.state, this.mirrors), this.scene);
     if (this.clearance && this.clearance.distance <= 0 && this.firstContactTime === null) {
       this.firstContactTime = this.simTime;
-      this.firstContactHistoryLength = this.history.length;
+      this.firstContactPosition = this.history.evicted + this.history.length;
     }
   }
 
