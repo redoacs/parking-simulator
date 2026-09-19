@@ -92,7 +92,8 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
 
   const timeScale = el('input', { type: 'range', min: '0.1', max: '1', step: '0.05', value: '1' });
   timeScale.addEventListener('input', () => o.onTimeScale(Number(timeScale.value)));
-  timeScale.addEventListener('change', () => timeScale.blur());
+  // Mouse/touch commits return focus to driving; a `change` listener would also blur on every keyboard step, so keyboard stepping after Tab-focus would stop.
+  timeScale.addEventListener('pointerup', () => timeScale.blur());
   const resetBtn = el('button', { type: 'button' }, 'Reset (R)');
   resetBtn.addEventListener('click', () => o.onReset());
   const fitBtn = el('button', { type: 'button' }, 'Fit view (F)');
