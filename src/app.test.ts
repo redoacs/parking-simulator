@@ -10,7 +10,7 @@ import { deriveVehicle } from './vehicle/derive';
 const vehicle = deriveVehicle(validateVehicleSpec(taos));
 
 /** App with the GPU and DOM stubbed out; `frames(n, hz)` runs n animation frames at a fixed refresh rate. */
-function harness(historySeconds?: number): { app: App; camera: Camera; frames(n: number, hz?: number): void } {
+function harness(historySeconds?: number): { app: App; camera: Camera; frames(n: number, hz?: number): void; until(done: () => boolean): void } {
   let pending: ((t: number) => void) | undefined;
   let now = 0;
   vi.stubGlobal('window', { addEventListener: () => undefined });
@@ -33,6 +33,11 @@ function harness(historySeconds?: number): { app: App; camera: Camera; frames(n:
         now += 1000 / hz;
         pending!(now);
       }
+    },
+    /** Bounded: a synchronous loop that never ends cannot be interrupted by the test timeout. */
+    until(done) {
+      for (let i = 0; i < 5000 && !done(); i++) this.frames(1);
+      if (!done()) throw new Error('condition not reached within 5000 frames');
     },
   };
 }
@@ -59,26 +64,52 @@ describe('App rewind', () => {
     const h = harness(10);
     const startY = h.app.snapshot().state.y;
     h.app.input.setKey('forward', true);
-    while (h.app.snapshot().firstContactTime === null) h.frames(1); // drive through the garage into the back wall
+    h.until(() => h.app.snapshot().firstContactTime !== null); // drive through the garage into the back wall
     const contactAt = h.app.snapshot().historyLength;
     const contactTime = h.app.snapshot().firstContactTime;
     expect(contactAt).toBeLessThan(1200); // contact is recorded before anything is evicted
-    while (h.app.snapshot().historyLength < 1200) h.frames(1);
+    h.until(() => h.app.snapshot().historyLength >= 1200);
     h.frames(30); // 60 more states: the ring is full, so 60 are evicted
     h.app.input.setKey('forward', false);
 
     // Rewound to a length below the recorded one, but not past the contact itself. The car is still inside the wall
     // here, so a wrongly cleared contact is re-recorded at once: pin the time, not just its presence.
     h.app.input.setKey('rewind', true);
-    while (h.app.snapshot().historyLength > contactAt - 20) h.frames(1);
+    h.until(() => h.app.snapshot().historyLength <= contactAt - 20);
     expect(h.app.snapshot().firstContactTime).toBe(contactTime);
 
-    while (h.app.snapshot().historyLength > contactAt - 100) h.frames(1);
+    h.until(() => h.app.snapshot().historyLength <= contactAt - 100);
     expect(h.app.snapshot().firstContactTime).toBeNull();
 
     h.frames(20 * 60);
     expect(h.app.snapshot().historyLength).toBe(1);
     expect(h.app.snapshot().state.y).toBeGreaterThan(startY + 0.1);
+  });
+
+  it('tracks a first contact made after eviction has begun', () => {
+    const h = harness(2); // 240 states: the ring is evicting long before the car reaches the back wall
+    h.app.input.setKey('forward', true);
+    h.until(() => h.app.snapshot().firstContactTime !== null);
+    const contactTime = h.app.snapshot().firstContactTime;
+    h.frames(15); // 30 states past the contact
+    h.app.input.setKey('forward', false);
+    h.app.input.setKey('rewind', true);
+    h.frames(5); // 20 states back: still past the contact
+    expect(h.app.snapshot().firstContactTime).toBe(contactTime);
+    h.frames(5); // 40 back: before it
+    expect(h.app.snapshot().firstContactTime).toBeNull();
+  });
+
+  it('with nothing evicted, a full rewind returns to the start pose', () => {
+    const h = harness();
+    const start = h.app.snapshot().state;
+    h.app.input.setKey('forward', true);
+    h.frames(60);
+    h.app.input.setKey('forward', false);
+    h.app.input.setKey('rewind', true);
+    h.frames(5 * 60);
+    expect(h.app.snapshot().historyLength).toBe(0);
+    expect(h.app.snapshot().state).toEqual(start);
   });
 });
 
