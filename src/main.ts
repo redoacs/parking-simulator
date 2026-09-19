@@ -17,6 +17,8 @@ declare global {
       snapshot(): Snapshot;
       readEnvelopeAt(x: number, y: number): Promise<number>;
       setKey(key: DriveKey, down: boolean): void;
+      /** Canvas-relative CSS pixels for a world point; lets the e2e suite look at what is actually drawn. */
+      worldToCss(x: number, y: number): { x: number; y: number };
     };
   }
 }
@@ -69,6 +71,7 @@ async function main(): Promise<void> {
     snapshot: () => app.snapshot(),
     readEnvelopeAt: (x, y) => renderer.readEnvelopeAt({ x, y }),
     setKey: (key, down) => app.input.setKey(key, down),
+    worldToCss: (x, y) => renderer.camera.worldToCss({ x, y }),
   };
 
   const panelRoot = document.getElementById('panel')!;
