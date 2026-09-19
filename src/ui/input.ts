@@ -3,10 +3,14 @@ import type { ControlInput, SimParams, VehicleState } from '../sim/model';
 export type DriveKey = 'forward' | 'reverse' | 'left' | 'right' | 'centre' | 'stop' | 'rewind' | 'reset' | 'fit';
 
 const KEYMAP: Record<string, DriveKey> = {
-  ArrowUp: 'forward', KeyW: 'forward',
-  ArrowDown: 'reverse', KeyS: 'reverse',
-  ArrowLeft: 'left', KeyA: 'left',
-  ArrowRight: 'right', KeyD: 'right',
+  ArrowUp: 'forward',
+  KeyW: 'forward',
+  ArrowDown: 'reverse',
+  KeyS: 'reverse',
+  ArrowLeft: 'left',
+  KeyA: 'left',
+  ArrowRight: 'right',
+  KeyD: 'right',
   KeyC: 'centre',
   Space: 'stop',
   KeyZ: 'rewind',

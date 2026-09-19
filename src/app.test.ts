@@ -10,16 +10,35 @@ import { deriveVehicle } from './vehicle/derive';
 const vehicle = deriveVehicle(validateVehicleSpec(taos));
 
 /** App with the GPU and DOM stubbed out; `frames(n, hz)` runs n animation frames at a fixed refresh rate. */
-function harness(historySeconds?: number): { app: App; camera: Camera; frames(n: number, hz?: number): void; until(done: () => boolean): void } {
+function harness(historySeconds?: number): {
+  app: App;
+  camera: Camera;
+  frames(n: number, hz?: number): void;
+  until(done: () => boolean): void;
+} {
   let pending: ((t: number) => void) | undefined;
   let now = 0;
   vi.stubGlobal('window', { addEventListener: () => undefined });
-  vi.stubGlobal('ResizeObserver', class { observe(): void {} });
-  vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => { pending = cb; return 0; });
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe(): void {}
+    },
+  );
+  vi.stubGlobal('requestAnimationFrame', (cb: (t: number) => void) => {
+    pending = cb;
+    return 0;
+  });
   vi.spyOn(performance, 'now').mockImplementation(() => now);
   const camera = new Camera();
   camera.resize(800, 600, 1);
-  const renderer = { camera, resize: () => undefined, frame: () => undefined, resetEnvelope: () => undefined, rebuildEnvelope: () => undefined };
+  const renderer = {
+    camera,
+    resize: () => undefined,
+    frame: () => undefined,
+    resetEnvelope: () => undefined,
+    rebuildEnvelope: () => undefined,
+  };
   const canvas = { addEventListener: () => undefined, getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) };
   const app = new App(canvas as unknown as HTMLCanvasElement, renderer as unknown as Renderer, vehicle, historySeconds);
   const garage = getPreset('garage')!;

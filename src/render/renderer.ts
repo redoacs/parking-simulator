@@ -92,7 +92,14 @@ export class Renderer {
     const encoder = device.createCommandEncoder();
     this.envelope.accumulate(encoder, input.newFootprints);
     const pass = encoder.beginRenderPass({
-      colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', clearValue: { r: 0.078, g: 0.09, b: 0.11, a: 1 }, storeOp: 'store' }],
+      colorAttachments: [
+        {
+          view: context.getCurrentTexture().createView(),
+          loadOp: 'clear',
+          clearValue: { r: 0.078, g: 0.09, b: 0.11, a: 1 },
+          storeOp: 'store',
+        },
+      ],
     });
     this.grid.draw(pass, this.cameraBindGroup);
     this.polys.draw(pass, this.staticBatch, this.cameraBindGroup);

@@ -28,8 +28,16 @@ export const perpendicular: PresetDef = {
     const neighbours: Obstacle[] =
       p.neighbours! > 0
         ? [
-            { kind: 'car', height: 1.6, polygon: rect(-bayWidth + carX, carY0, -bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
-            { kind: 'car', height: 1.6, polygon: rect(bayWidth + carX, carY0, bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length) },
+            {
+              kind: 'car',
+              height: 1.6,
+              polygon: rect(-bayWidth + carX, carY0, -bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length),
+            },
+            {
+              kind: 'car',
+              height: 1.6,
+              polygon: rect(bayWidth + carX, carY0, bayWidth + carX + NEIGHBOUR_CAR.width, carY0 + NEIGHBOUR_CAR.length),
+            },
           ]
         : [];
     const obstacles: Obstacle[] = [

@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { vec } from './vec2';
 import {
-  rect, rectCentered, transformPolygon, signedArea, isConvex, boundsOf,
-  pointInConvex, polygonInsideConvex, fanTriangles, rectFromSegment,
+  rect,
+  rectCentered,
+  transformPolygon,
+  signedArea,
+  isConvex,
+  boundsOf,
+  pointInConvex,
+  polygonInsideConvex,
+  fanTriangles,
+  rectFromSegment,
 } from './polygon';
 
 describe('polygon', () => {

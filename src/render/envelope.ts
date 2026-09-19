@@ -46,11 +46,18 @@ export class EnvelopePass {
   private compositeBindGroup: GPUBindGroup | null = null;
   private readonly readback: GPUBuffer;
 
-  constructor(private readonly device: GPUDevice, canvasFormat: GPUTextureFormat, cameraLayout: GPUBindGroupLayout) {
+  constructor(
+    private readonly device: GPUDevice,
+    canvasFormat: GPUTextureFormat,
+    cameraLayout: GPUBindGroupLayout,
+  ) {
     this.accumPipeline = new PolygonPipeline(device, ENVELOPE_FORMAT, cameraLayout, MAX_BLEND);
     this.accumBatch = new PolygonBatch(device, 256 * 1024);
     this.accumCameraBuffer = device.createBuffer({ size: CAMERA_UNIFORM_BYTES, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
-    this.accumCameraBindGroup = device.createBindGroup({ layout: cameraLayout, entries: [{ binding: 0, resource: { buffer: this.accumCameraBuffer } }] });
+    this.accumCameraBindGroup = device.createBindGroup({
+      layout: cameraLayout,
+      entries: [{ binding: 0, resource: { buffer: this.accumCameraBuffer } }],
+    });
 
     this.compositeLayout = device.createBindGroupLayout({
       entries: [
@@ -66,7 +73,15 @@ export class EnvelopePass {
       fragment: {
         module,
         entryPoint: 'fs',
-        targets: [{ format: canvasFormat, blend: { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } } }],
+        targets: [
+          {
+            format: canvasFormat,
+            blend: {
+              color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+              alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+            },
+          },
+        ],
       },
       primitive: { topology: 'triangle-list' },
     });
@@ -93,11 +108,25 @@ export class EnvelopePass {
     const sx = 2 / w;
     const sy = 2 / h;
     this.device.queue.writeBuffer(
-      this.accumCameraBuffer, 0,
-      new Float32Array([sx, sy, -((bounds.minX + bounds.maxX) / 2) * sx, -((bounds.minY + bounds.maxY) / 2) * sy, size.width, size.height, 0, 0]),
+      this.accumCameraBuffer,
+      0,
+      new Float32Array([
+        sx,
+        sy,
+        -((bounds.minX + bounds.maxX) / 2) * sx,
+        -((bounds.minY + bounds.maxY) / 2) * sy,
+        size.width,
+        size.height,
+        0,
+        0,
+      ]),
     );
     const t = COLORS.envelope;
-    this.device.queue.writeBuffer(this.envUniform, 0, new Float32Array([bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, t[0], t[1], t[2], t[3]]));
+    this.device.queue.writeBuffer(
+      this.envUniform,
+      0,
+      new Float32Array([bounds.minX, bounds.minY, bounds.maxX, bounds.maxY, t[0], t[1], t[2], t[3]]),
+    );
     this.compositeBindGroup = this.device.createBindGroup({
       layout: this.compositeLayout,
       entries: [
@@ -110,7 +139,11 @@ export class EnvelopePass {
 
   clear(encoder: GPUCommandEncoder): void {
     if (!this.view) return;
-    encoder.beginRenderPass({ colorAttachments: [{ view: this.view, loadOp: 'clear', clearValue: { r: 0, g: 0, b: 0, a: 0 }, storeOp: 'store' }] }).end();
+    encoder
+      .beginRenderPass({
+        colorAttachments: [{ view: this.view, loadOp: 'clear', clearValue: { r: 0, g: 0, b: 0, a: 0 }, storeOp: 'store' }],
+      })
+      .end();
   }
 
   accumulate(encoder: GPUCommandEncoder, footprints: Polygon[]): void {
@@ -136,7 +169,11 @@ export class EnvelopePass {
     const t = envelopeTexel(this.bounds, this.width, this.height, p);
     if (!t) return 0;
     const encoder = this.device.createCommandEncoder();
-    encoder.copyTextureToBuffer({ texture: this.texture, origin: { x: t.x, y: t.y } }, { buffer: this.readback, bytesPerRow: 256 }, { width: 1, height: 1 });
+    encoder.copyTextureToBuffer(
+      { texture: this.texture, origin: { x: t.x, y: t.y } },
+      { buffer: this.readback, bytesPerRow: 256 },
+      { width: 1, height: 1 },
+    );
     this.device.queue.submit([encoder.finish()]);
     await this.readback.mapAsync(GPUMapMode.READ);
     const value = new Uint8Array(this.readback.getMappedRange())[0]! / 255;

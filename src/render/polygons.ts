@@ -35,7 +35,10 @@ export class PolygonBatch {
   capacityBytes: number;
   vertexCount = 0;
 
-  constructor(private readonly device: GPUDevice, initialBytes = 64 * 1024) {
+  constructor(
+    private readonly device: GPUDevice,
+    initialBytes = 64 * 1024,
+  ) {
     this.capacityBytes = initialBytes;
     this.buffer = device.createBuffer({ size: initialBytes, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
   }

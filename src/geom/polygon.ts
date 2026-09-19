@@ -59,7 +59,10 @@ export function isConvex(poly: Polygon): boolean {
 }
 
 export function boundsOf(polys: Polygon[]): Rect {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
   for (const poly of polys) {
     for (const p of poly) {
       if (p.x < minX) minX = p.x;

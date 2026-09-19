@@ -47,7 +47,8 @@ export function validateVehicleSpec(raw: unknown): VehicleSpec {
   if (!isRecord(tcRaw) || !isRecord(tcRaw.value)) throw new VehicleSpecError('turningCircle', 'missing');
   const diameter = tcRaw.value.diameter;
   const kind = tcRaw.value.kind;
-  if (typeof diameter !== 'number' || !Number.isFinite(diameter) || diameter <= 0) throw new VehicleSpecError('turningCircle', 'diameter must be positive');
+  if (typeof diameter !== 'number' || !Number.isFinite(diameter) || diameter <= 0)
+    throw new VehicleSpecError('turningCircle', 'diameter must be positive');
   if (kind !== 'kerb' && kind !== 'wall') throw new VehicleSpecError('turningCircle', `kind must be "kerb" or "wall", got ${String(kind)}`);
 
   const modelYear = raw.modelYear;
@@ -71,7 +72,10 @@ export function validateVehicleSpec(raw: unknown): VehicleSpec {
   if (spec.trackRear.value >= spec.widthBody.value) throw new VehicleSpecError('trackRear', 'must be < widthBody');
   const minDiameter = minimumTurningDiameter(dimsOf(spec));
   if (spec.turningCircle.value.diameter <= minDiameter) {
-    throw new VehicleSpecError('turningCircle', `diameter ${spec.turningCircle.value.diameter} m is not feasible for a ${spec.turningCircle.value.kind} reference point; must exceed ${minDiameter.toFixed(3)} m`);
+    throw new VehicleSpecError(
+      'turningCircle',
+      `diameter ${spec.turningCircle.value.diameter} m is not feasible for a ${spec.turningCircle.value.kind} reference point; must exceed ${minDiameter.toFixed(3)} m`,
+    );
   }
   return spec;
 }
