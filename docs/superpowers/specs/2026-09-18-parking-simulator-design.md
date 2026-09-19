@@ -226,10 +226,12 @@ path). Also used during development to verify visually.
 ## 9. Tooling, CI, deploy
 
 - `pnpm` (corepack), Vite, TypeScript `strict`, `@webgpu/types`, ESLint
-  (typescript-eslint recommended) + Prettier, Vitest, Playwright.
-- Scripts: `dev`, `build`, `preview`, `test`, `test:e2e`, `lint`, `typecheck`.
+  (typescript-eslint strict + stylistic, type-checked) + Prettier (width 140),
+  Vitest, Playwright.
+- Scripts: `dev`, `build`, `preview`, `test`, `test:e2e`, `lint`, `typecheck`,
+  `format`, `format:check`.
 - GitHub Actions on push to `main` and on PRs: install (frozen lockfile),
-  typecheck, lint, unit tests, build; on `main` additionally deploy `dist/`
+  typecheck, lint, format check, unit tests, build; on `main` additionally deploy `dist/`
   to GitHub Pages. Vite `base` = `/parking-simulator/`.
 - The GitHub repository `redoacs/parking-simulator` (public) is created at the
   deploy step, not before.

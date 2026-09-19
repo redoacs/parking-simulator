@@ -56,7 +56,7 @@ export const NUMERIC_FIELDS = [
 
 export type NumericField = (typeof NUMERIC_FIELDS)[number];
 
-export type VehicleDims = { [K in NumericField]: number } & { turningCircle: TurningCircle };
+export type VehicleDims = Record<NumericField, number> & { turningCircle: TurningCircle };
 
 export function dimsOf(spec: VehicleSpec): VehicleDims {
   const out = {} as Record<NumericField, number>;

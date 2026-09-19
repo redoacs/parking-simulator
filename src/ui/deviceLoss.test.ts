@@ -27,7 +27,9 @@ describe('decideOnDeviceLoss', () => {
       getItem: () => {
         throw new Error('blocked');
       },
-      setItem: () => {},
+      setItem: () => {
+        // stub
+      },
     };
     expect(decideOnDeviceLoss(throwing, 5)).toBe('fatal');
   });

@@ -48,7 +48,8 @@ async function main(): Promise<void> {
     );
     return;
   }
-  renderer.device.lost.then((info) => {
+  // `lost` never rejects, and a throw in the handler reaches the unhandledrejection listener below.
+  void renderer.device.lost.then((info) => {
     if (info.reason === 'destroyed') return;
     let store: KeyValueStore | null = null;
     try {
@@ -70,8 +71,8 @@ async function main(): Promise<void> {
     setKey: (key, down) => app.input.setKey(key, down),
   };
 
-  const panelRoot = document.getElementById('panel') as HTMLElement;
-  const hud = document.getElementById('hud') as HTMLElement;
+  const panelRoot = document.getElementById('panel')!;
+  const hud = document.getElementById('hud')!;
   const initial: HashState = decodeHash(location.hash) ?? { presetId: PRESETS[0]!.id, params: defaultParams(PRESETS[0]!), mirrors: true };
   const applyScenario = (h: HashState): void => {
     app.setPreset(h.presetId, h.params);
@@ -108,4 +109,4 @@ async function main(): Promise<void> {
 // Never a silent blank canvas: anything that escapes main() or fires later lands in #fatal.
 window.addEventListener('error', (e) => showFatal(`Unexpected error: ${e.message}`));
 window.addEventListener('unhandledrejection', (e) => showFatal(`Unexpected error: ${String(e.reason)}`));
-main().catch((e) => showFatal(`Startup failed: ${String(e)}`));
+main().catch((e: unknown) => showFatal(`Startup failed: ${String(e)}`));
