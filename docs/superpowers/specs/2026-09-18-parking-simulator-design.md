@@ -195,7 +195,8 @@ Plain HTML/CSS/TS, no framework. Left panel:
 
 - No WebGL2 context: replace the app with a message listing supported
   browsers. Never a silent blank canvas.
-- `webglcontextlost`: reload once per session; on a second loss show the message.
+- `webglcontextlost`: reload, unless the previous loss was under 60 s ago; then
+  show the message (a reload loop is worse than a message).
 - Vehicle JSON validated at load (positive finite numbers, length identity,
   sources present); a failure halts startup with the field named.
 - Preset params clamped; generators are written so no clamped combination
@@ -225,7 +226,7 @@ path). Also used during development to verify visually.
 
 ## 9. Tooling, CI, deploy
 
-- `pnpm` (corepack), Vite, TypeScript `strict`, `@webgpu/types`, ESLint
+- `pnpm` (corepack), Vite, TypeScript `strict`, ESLint
   (typescript-eslint strict + stylistic, type-checked) + Prettier (width 140),
   Vitest, Playwright.
 - Scripts: `dev`, `build`, `preview`, `test`, `test:e2e`, `lint`, `typecheck`,

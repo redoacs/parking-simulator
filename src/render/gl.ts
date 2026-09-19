@@ -6,7 +6,8 @@ export class WebGlUnavailableError extends Error {
 }
 
 export function initGl(canvas: HTMLCanvasElement): WebGL2RenderingContext {
-  const gl = canvas.getContext('webgl2', { alpha: false, antialias: false });
+  // No pass uses depth or stencil, and on a phone a depth buffer is a canvas-sized allocation for nothing.
+  const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false });
   if (!gl) throw new WebGlUnavailableError('This browser has no WebGL2.');
   return gl;
 }

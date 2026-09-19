@@ -117,7 +117,8 @@ test('shows a message instead of a blank page without WebGL2', async ({ browser 
   const page = await context.newPage();
   await page.goto('/');
   await expect(page.locator('#fatal')).toBeVisible();
-  await expect(page.locator('#fatal')).toContainText('WebGL2');
+  // This sentence comes only from main.ts's WebGlUnavailableError branch; the bare error text would not contain it.
+  await expect(page.locator('#fatal')).toContainText('Requires a browser with WebGL2');
   await context.close();
 });
 

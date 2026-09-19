@@ -55,9 +55,7 @@ export class EnvelopePass {
     this.accumCamera = createUniformBuffer(gl, CAMERA_UNIFORM_BYTES);
     this.compositeProgram = compileProgram(gl, envelopeSrc);
     this.compositeVao = gl.createVertexArray(); // no attributes: the quad comes from gl_VertexID
-    this.envUniform = createUniformBuffer(gl, 32);
-    gl.useProgram(this.compositeProgram);
-    gl.uniform1i(gl.getUniformLocation(this.compositeProgram, 'uTex'), 0);
+    this.envUniform = createUniformBuffer(gl, 32); // uTex needs no setup: a sampler uniform is 0 after link, and composite() binds unit 0
   }
 
   /** (Re)allocate for new bounds. The texture starts cleared to 0. */

@@ -62,8 +62,8 @@ export class Renderer {
 
   /** The GL context was lost (GPU reset, driver update, too many contexts). Nothing is drawn after this. */
   onContextLost(cb: (message: string) => void): void {
-    this.canvas.addEventListener('webglcontextlost', (e) => {
-      e.preventDefault();
+    // No preventDefault: that would opt into a restored context, and nothing here rebuilds GL objects for one.
+    this.canvas.addEventListener('webglcontextlost', () => {
       cb('WebGL context lost');
     });
   }
@@ -78,7 +78,17 @@ export class Renderer {
       c.width = w;
       c.height = h;
     }
-    this.camera.resize(w, h, dpr);
+    // WebGL may allocate a smaller drawing buffer than the canvas asks for (very large canvases, high DPR), and it
+    // clamps each axis on its own. Ask again for a size that fits and keeps the aspect, so the picture is neither
+    // clipped nor stretched, then size the camera from what was actually allocated.
+    const gl = this.gl;
+    if (gl.drawingBufferWidth !== c.width || gl.drawingBufferHeight !== c.height) {
+      const k = Math.min(gl.drawingBufferWidth / c.width, gl.drawingBufferHeight / c.height);
+      c.width = Math.max(1, Math.floor(c.width * k));
+      c.height = Math.max(1, Math.floor(c.height * k));
+    }
+    const bw = gl.drawingBufferWidth;
+    this.camera.resize(bw, gl.drawingBufferHeight, c.clientWidth > 0 ? bw / c.clientWidth : dpr);
   }
 
   frame(input: FrameInput): void {
@@ -99,7 +109,7 @@ export class Renderer {
 
     // accumulate() may have changed the viewport and the camera block; the screen pass sets both.
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.bindBufferBase(gl.UNIFORM_BUFFER, CAMERA_BINDING, this.cameraBuffer);
     gl.clearColor(0.078, 0.09, 0.11, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
