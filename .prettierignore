@@ -1,8 +1,9 @@
 node_modules/
 dist/
-/.worktrees/
-.DS_Store
-.claude/settings.local.json
+pnpm-lock.yaml
+docs/
+.superpowers/
 .playwright-mcp/
 playwright-report/
 test-results/
+.worktrees/

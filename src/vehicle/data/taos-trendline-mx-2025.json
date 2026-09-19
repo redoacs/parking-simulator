@@ -1,0 +1,20 @@
+{
+  "id": "taos-trendline-mx-2025",
+  "name": "Volkswagen Taos Trendline",
+  "market": "MX",
+  "modelYear": 2025,
+  "length": { "value": 4.467, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "Largo (mm) 4467" } },
+  "widthBody": { "value": 1.841, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "Ancho (mm) 1841; VW USA sheet states width excludes mirrors" } },
+  "widthMirrors": { "value": 2.098, "source": { "url": "https://www.elkgrovevw.com/2025-volkswagen-taos-dimensions/", "accessed": "2026-09-18", "note": "unverified: dealer-quoted 82.6 in incl. mirrors; not published by VW" } },
+  "height": { "value": 1.638, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "Alto (mm) 1638" } },
+  "wheelbase": { "value": 2.689, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "Distancia entre ejes (mm) 2689" } },
+  "frontOverhang": { "value": 0.870, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "unverified: split estimated; only front+rear = 1.778 m (length - wheelbase) is sourced" } },
+  "rearOverhang": { "value": 0.908, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "unverified: split estimated; only front+rear = 1.778 m (length - wheelbase) is sourced" } },
+  "trackFront": { "value": 1.572, "source": { "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf", "accessed": "2026-09-18", "note": "VW USA 2024 Taos 1.5T FWD: Front Track 61.9 in / 1572 mm (same body: wb 2689, width 1841, 215/55 R17)" } },
+  "trackRear": { "value": 1.537, "source": { "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf", "accessed": "2026-09-18", "note": "VW USA 2024 Taos 1.5T FWD: Rear Track 60.5 in / 1537 mm" } },
+  "turningCircle": { "value": { "diameter": 10.70, "kind": "kerb" }, "source": { "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf", "accessed": "2026-09-18", "note": "VW USA 2024 Taos 1.5T FWD: Turning Circle (curb to curb) 35.1 ft / 10.70 m; 2.69 turns lock-to-lock" } },
+  "tireWidth": { "value": 0.215, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "Trendline: Llantas 215/55 R17" } },
+  "wheelDiameter": { "value": 0.668, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "computed from 215/55 R17: 17*25.4 + 2*0.55*215 = 668 mm" } },
+  "mirrorLongitudinal": { "value": 1.839, "source": { "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf", "accessed": "2026-09-18", "note": "unverified: mirror centre assumed 0.85 m behind the front axle (wheelbase - 0.85)" } },
+  "mirrorLength": { "value": 0.20, "source": { "url": "https://www.elkgrovevw.com/2025-volkswagen-taos-dimensions/", "accessed": "2026-09-18", "note": "unverified: typical housing fore-aft length" } }
+}

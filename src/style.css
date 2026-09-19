@@ -1,0 +1,24 @@
+:root { color-scheme: dark; font: 14px/1.4 system-ui, sans-serif; --bg: #14171c; --panel: #1d222a; --fg: #e6e9ef; --muted: #8a93a3; --ok: #3ddc84; --warn: #f5b942; --bad: #ff5c5c; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); }
+#app { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
+#panel { background: var(--panel); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+#stage { position: relative; overflow: hidden; }
+#gpu { width: 100%; height: 100%; display: block; touch-action: none; }
+#hud { position: absolute; left: 12px; top: 12px; pointer-events: none; display: flex; flex-direction: column; gap: 4px; }
+#fatal { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; background: var(--bg); text-align: center; }
+#fatal[hidden] { display: none; }
+fieldset { border: 1px solid #2c333e; border-radius: 6px; padding: 8px 10px; }
+legend { color: var(--muted); padding: 0 4px; }
+label.param { display: grid; grid-template-columns: 1fr 80px; align-items: center; gap: 8px; margin: 4px 0; }
+input[type="number"], select { background: #10131a; color: var(--fg); border: 1px solid #2c333e; border-radius: 4px; padding: 3px 6px; width: 100%; }
+button { background: #2a3140; color: var(--fg); border: 1px solid #3a4354; border-radius: 4px; padding: 6px 10px; cursor: pointer; }
+button:active { background: #3a4354; }
+.readout { display: flex; justify-content: space-between; gap: 8px; }
+.readout .value { font-variant-numeric: tabular-nums; }
+.band-ok { color: var(--ok); } .band-warn { color: var(--warn); } .band-bad { color: var(--bad); font-weight: 600; }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.pad button { padding: 10px 0; }
+.unverified { color: var(--warn); font-size: 11px; margin-left: 4px; }
+.source { color: var(--muted); font-size: 11px; }
+@media (max-width: 720px) { #app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; } #panel { order: 2; max-height: 45vh; } }

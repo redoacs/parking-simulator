@@ -147,6 +147,7 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['dist/', 'node_modules/', '.worktrees/', 'playwright-report/', 'test-results/'] },
   ...tseslint.configs.recommended,
+  { rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] } },
 );
 ```
 
@@ -531,6 +532,10 @@ describe('convexPenetration', () => {
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.8, 0, 1.8, 1))).toBeCloseTo(0.2, 12);
     expect(convexPenetration(rect(0, 0, 1, 1), rect(0.3, 0.9, 0.6, 1.9))).toBeCloseTo(0.1, 12);
   });
+  it('uses the minimum translation, not the interval intersection, when intervals nest', () => {
+    expect(convexPenetration(rect(0, 0, 4, 4), rect(1, -1, 2, 5))).toBeCloseTo(2, 12);
+    expect(convexPenetration(rect(0, 0, 4.5, 1.8), rect(2.15, -1, 2.35, 3))).toBeCloseTo(2.35, 12);
+  });
 });
 
 describe('polygonDistance', () => {
@@ -552,6 +557,9 @@ describe('polygonDistance', () => {
   });
   it('containment is negative', () => {
     expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeLessThan(0);
+  });
+  it('containment depth is the shortest way out', () => {
+    expect(polygonDistance(rect(0, 0, 4, 4), rect(1, 1, 2, 2)).distance).toBeCloseTo(-2, 12);
   });
 });
 ```
@@ -638,7 +646,9 @@ export function convexPenetration(a: Polygon, b: Polygon): number {
       const axis = normalize(perp(sub(poly[(i + 1) % poly.length]!, poly[i]!)));
       const [amin, amax] = project(a, axis);
       const [bmin, bmax] = project(b, axis);
-      const overlap = Math.min(amax, bmax) - Math.max(amin, bmin);
+      // Minimum translation along this axis: b moves until bmin >= amax or bmax <= amin.
+      // (Not the interval intersection — that under-reports when one interval nests in the other.)
+      const overlap = Math.min(amax - bmin, bmax - amin);
       if (overlap <= 1e-12) return 0;
       if (overlap < minOverlap) minOverlap = overlap;
     }
@@ -852,7 +862,8 @@ Expected: FAIL — cannot resolve `./validate`.
 
 `src/vehicle/validate.ts`:
 ```ts
-import { NUMERIC_FIELDS, type Cited, type Source, type VehicleSpec } from './types';
+import { NUMERIC_FIELDS, dimsOf, type Cited, type Source, type VehicleSpec } from './types';
+import { minimumTurningDiameter } from '../geom/turning';
 
 export class VehicleSpecError extends Error {
   constructor(
@@ -922,7 +933,11 @@ export function validateVehicleSpec(raw: unknown): VehicleSpec {
   if (spec.widthMirrors.value < spec.widthBody.value) throw new VehicleSpecError('widthMirrors', 'must be >= widthBody');
   if (spec.trackFront.value >= spec.widthBody.value) throw new VehicleSpecError('trackFront', 'must be < widthBody');
   if (spec.trackRear.value >= spec.widthBody.value) throw new VehicleSpecError('trackRear', 'must be < widthBody');
-  if (spec.turningCircle.value.diameter / 2 <= spec.wheelbase.value) throw new VehicleSpecError('turningCircle', 'radius must exceed wheelbase');
+  // Task 5 ruling: the exact feasibility condition lives in geom/turning.ts (minimumTurningDiameter).
+  const minDiameter = minimumTurningDiameter(dimsOf(spec));
+  if (spec.turningCircle.value.diameter <= minDiameter) {
+    throw new VehicleSpecError('turningCircle', `diameter ${spec.turningCircle.value.diameter} m is not feasible for a ${spec.turningCircle.value.kind} reference point; must exceed ${minDiameter.toFixed(3)} m`);
+  }
   return spec;
 }
 ```
@@ -1040,16 +1055,33 @@ import type { VehicleDims } from '../vehicle/types';
  * Reference point at lateral offset a and longitudinal offset b from the
  * rear-axle centre traces sqrt((R + a)^2 + b^2) = D / 2.
  */
-export function steerFromTurningCircle(dims: VehicleDims): number {
-  const { diameter, kind } = dims.turningCircle;
+function referenceOffsets(dims: VehicleDims): { a: number; b: number } {
   const L = dims.wheelbase;
-  const a = kind === 'kerb' ? dims.trackFront / 2 : dims.widthBody / 2;
-  const b = kind === 'kerb' ? L : L + dims.frontOverhang;
+  return dims.turningCircle.kind === 'kerb'
+    ? { a: dims.trackFront / 2, b: L }
+    : { a: dims.widthBody / 2, b: L + dims.frontOverhang };
+}
+
+/** Smallest diameter the reference point can trace (R → 0⁺). Below this the spec is inconsistent. */
+export function minimumTurningDiameter(dims: VehicleDims): number {
+  const { a, b } = referenceOffsets(dims);
+  return 2 * Math.hypot(a, b);
+}
+
+export function steerFromTurningCircle(dims: VehicleDims): number {
+  const { diameter } = dims.turningCircle;
+  const min = minimumTurningDiameter(dims);
+  if (!(diameter > min)) {
+    throw new RangeError(`turning circle ${diameter} m is not feasible for a ${dims.turningCircle.kind} reference point; must exceed ${min.toFixed(3)} m`);
+  }
+  const { a, b } = referenceOffsets(dims);
   const half = diameter / 2;
   const R = Math.sqrt(half * half - b * b) - a;
-  return Math.atan(L / R);
+  return Math.atan(dims.wheelbase / R);
 }
 ```
+
+(Task 5 review ruling: validation's `D/2 > wheelbase` is weaker than the formula's requirement `(D/2)² > a² + b²`; `validateVehicleSpec` uses `minimumTurningDiameter` for its `turningCircle` check instead of the radius-vs-wheelbase line, and `steerFromTurningCircle` throws on the same condition.)
 
 `src/vehicle/derive.ts`:
 ```ts
@@ -3376,7 +3408,7 @@ export class App {
   private mirrors = true;
   private timeScale = 1;
   private state: VehicleState = this.scene.start;
-  private readonly history = new StateHistory(HISTORY_SECONDS / SIM_DT);
+  private readonly history = new StateHistory(Math.round(HISTORY_SECONDS / SIM_DT));
   private simTime = 0;
   private firstContactTime: number | null = null;
   private clearance: Clearance | null = null;
@@ -4054,7 +4086,22 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   expect(after.state.x).toBeLessThan(start.state.x - 1.0);
   expect(after.historyLength).toBeGreaterThan(60);
   expect(Number.isFinite(after.clearance!.distance)).toBe(true);
-  expect(after.clearance!.distance).not.toBe(start.clearance!.distance);
+
+  // A straight reverse in this preset slides the mirror along the neighbour's flat edge, so the
+  // clearance can legitimately stay put (Task 13 measurement). An arc toward the kerb must change it.
+  await page.evaluate(() => {
+    window.__sim!.setKey('left', true);
+    window.__sim!.setKey('reverse', true);
+  });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    window.__sim!.setKey('left', false);
+    window.__sim!.setKey('reverse', false);
+  });
+  await page.waitForTimeout(100);
+  const arced = await page.evaluate(() => window.__sim!.snapshot());
+  expect(arced.state.theta).not.toBeCloseTo(after.state.theta, 3);
+  expect(arced.clearance!.distance).not.toBeCloseTo(after.clearance!.distance, 3);
 
   // The start pose lies inside the swept envelope: read back the texel under the original rear axle.
   const coverage = await page.evaluate(([x, y]) => window.__sim!.readEnvelopeAt(x, y), [start.state.x, start.state.y] as const);
