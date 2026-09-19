@@ -13,7 +13,8 @@ export interface GpuContext {
 }
 
 export async function initGpu(canvas: HTMLCanvasElement): Promise<GpuContext> {
-  // @webgpu/types declares navigator.gpu as always present; at runtime it is missing wherever WebGPU is unavailable.
+  // @webgpu/types declares navigator.gpu as always defined, so the rule flags `!navigator.gpu`. It can still be present
+  // but undefined (the e2e no-WebGPU stub does exactly that), and without this half requestAdapter throws a TypeError.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (!('gpu' in navigator) || !navigator.gpu) throw new WebGpuUnavailableError('This browser has no WebGPU (navigator.gpu is missing).');
   const adapter = await navigator.gpu.requestAdapter();

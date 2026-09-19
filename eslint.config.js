@@ -5,13 +5,21 @@ export default defineConfig(
   globalIgnores(['dist/', 'node_modules/', '.worktrees/', 'playwright-report/', 'test-results/']),
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
-  { languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } } },
+  {
+    languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } },
+    // A stale eslint-disable must fail lint, not warn: `pnpm lint` exits 0 on warnings.
+    linterOptions: { reportUnusedDisableDirectives: 'error' },
+  },
   {
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       // tsconfig sets noUncheckedIndexedAccess, so `!` on an index or a Params lookup is the idiom here, not a smell.
       '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+      // Options replace the preset's wholesale, so restate its strict set and relax only numbers.
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowAny: false, allowBoolean: false, allowNever: false, allowNullish: false, allowNumber: true, allowRegExp: false },
+      ],
       // `() => o.onReset()` is the house style for handlers; the rule still catches void values used elsewhere.
       '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
     },
