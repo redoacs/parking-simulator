@@ -11,6 +11,17 @@ describe('Camera', () => {
     return c;
   };
 
+  it('worldToCss inverts screenToWorld', () => {
+    const c = cam();
+    c.cx = 3;
+    c.cy = -2;
+    c.resize(800, 600, 2);
+    const css = c.worldToCss({ x: 4.5, y: -1.25 });
+    const back = c.screenToWorld(css.x, css.y);
+    expect(back.x).toBeCloseTo(4.5, 9);
+    expect(back.y).toBeCloseTo(-1.25, 9);
+  });
+
   it('uniform maps the centre to clip origin and scales by ppm', () => {
     const u = cam().uniformData();
     // The uniform is a Float32Array, so compare against the float32-rounded ideal.

@@ -17,7 +17,7 @@ path. First vehicle: Volkswagen Taos Trendline, Mexico, model year 2025
 |---|---|
 | Interaction | Manual real-time driving with swept-path recording; data model planner-ready |
 | View | Top-down orthographic plan view; 3D-capable data model (x, y, z + heights) |
-| GPU stack | Raw WebGPU + WGSL, no rendering library; WebGL2 fallback deferred |
+| GPU stack | Raw WebGL2 + GLSL, no rendering library. (WebGPU + WGSL until v1.2; replaced for phone support, see the v1.2 spec.) |
 | Geometry | Analytic on CPU (exact); all pixels on GPU; swept envelope accumulated in a GPU texture |
 | Environment | Parametric presets with editable numeric parameters; scene stored as plain obstacle polygons |
 | Vehicle data | Researched from VW official sources, each figure cited; user confirms |
@@ -31,7 +31,7 @@ src/
   vehicle/   VehicleSpec JSON, validation, footprint derivation   (pure)
   sim/       kinematic bicycle model, control input, history      (pure)
   geom/      vectors, polygons, distances, turning geometry       (pure)
-  render/    WebGPU device, passes, WGSL shaders, camera          (browser)
+  render/    WebGL2 context, passes, GLSL shaders, camera         (browser)
   ui/        panel, readouts, presets UI, input bindings          (browser)
   scene/     Scene type + parametric preset generators            (pure)
   main.ts    wiring: input → sim.step → geom.check → render.frame
@@ -150,9 +150,9 @@ Each parameter has a documented sane range; values are clamped.
 
 ## 5. Rendering
 
-WebGPU only in v1. One device, one canvas, per frame:
+WebGL2 (since v1.2). One context, one canvas, per frame:
 
-1. **Envelope accumulation** — offscreen `r8unorm` texture covering
+1. **Envelope accumulation** — offscreen `R8` texture covering
    `scene.bounds` at 5 mm/px (a 30 m × 20 m scene = 6000 × 4000 px = 24 MB;
    bounded by presets). Each frame draws the footprints for the steps
    simulated since the previous frame with `max` blending. Never cleared until
@@ -174,7 +174,7 @@ frames `scene.bounds`. Handles `devicePixelRatio` and resize.
 `Renderer` interface: `init(canvas)`, `resize()`, `frame(view: FrameInput)`,
 `resetEnvelope()`, `rebuildEnvelope(states)`. `FrameInput` carries the scene
 buffers, car pose, guide circles, ruler, and camera. This is the seam for a
-later WebGL2 or 3D backend.
+later 3D backend; v1.2 swapped WebGPU for WebGL2 behind it without touching `App`.
 
 ## 6. UI
 
@@ -193,9 +193,10 @@ Plain HTML/CSS/TS, no framework. Left panel:
 
 ## 7. Error handling
 
-- No `navigator.gpu` or no adapter/device: replace the app with a message
-  listing supported browsers. Never a silent blank canvas.
-- `device.lost`: re-initialise once; on second loss show the message.
+- No WebGL2 context: replace the app with a message listing supported
+  browsers. Never a silent blank canvas.
+- `webglcontextlost`: reload, unless the previous loss was under 60 s ago; then
+  show the message (a reload loop is worse than a message).
 - Vehicle JSON validated at load (positive finite numbers, length identity,
   sources present); a failure halts startup with the field named.
 - Preset params clamped; generators are written so no clamped combination
@@ -218,14 +219,14 @@ Plain HTML/CSS/TS, no framework. Left panel:
   non-overlapping, non-self-intersecting obstacles and a car start pose that
   is clearance-positive.
 
-**Playwright smoke** (headless Chromium with WebGPU enabled): app boots,
+**Playwright smoke** (headless Chromium, default software GL): app boots,
 renderer initialises, a scripted key sequence moves the car, clearance readout
 changes, envelope texture is non-empty (read back one pixel under the car's
 path). Also used during development to verify visually.
 
 ## 9. Tooling, CI, deploy
 
-- `pnpm` (corepack), Vite, TypeScript `strict`, `@webgpu/types`, ESLint
+- `pnpm` (corepack), Vite, TypeScript `strict`, ESLint
   (typescript-eslint strict + stylistic, type-checked) + Prettier (width 140),
   Vitest, Playwright.
 - Scripts: `dev`, `build`, `preview`, `test`, `test:e2e`, `lint`, `typecheck`,
@@ -238,7 +239,7 @@ path). Also used during development to verify visually.
 
 ## 10. Out of scope (v1)
 
-Automatic planner, obstacle editor, 3D camera, WebGL2 fallback, vehicle
+Automatic planner, obstacle editor, 3D camera, vehicle
 dynamics (slip, suspension, acceleration curves), multiple vehicles at once,
 persistence beyond the URL hash, GPU text.
 

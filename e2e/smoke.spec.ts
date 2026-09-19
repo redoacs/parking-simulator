@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('boots WebGPU, drives, records clearance and envelope', async ({ page }) => {
+test('boots, drives, records clearance and envelope', async ({ page }) => {
   await page.goto('/#p=parallel');
-  // Either outcome ends the wait, so a WebGPU failure surfaces its #fatal text instead of a bare timeout.
+  // Either outcome ends the wait, so a WebGL failure surfaces its #fatal text instead of a bare timeout.
   await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden, null, { timeout: 20_000 });
 
   const fatal = page.locator('#fatal');
@@ -52,6 +52,32 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   const coverage = await page.evaluate(([x, y]) => window.__sim!.readEnvelopeAt(x, y), [start.state.x, start.state.y] as const);
   expect(coverage).toBeGreaterThan(0.5);
 
+  // The envelope must also be DRAWN where the car has been: the read-back above looks at the texture and cannot see a
+  // vertically mirrored composite, but the screen can. Compare a swept point the car has since left (just behind where
+  // its front bumper started) with a lane point beside it that nothing has covered. Both avoid the 1 m grid lines.
+  const points = await page.evaluate(
+    ([x, y]) => [window.__sim!.worldToCss(x + 3.33, y + 0.37), window.__sim!.worldToCss(x + 3.33, y + 1.33)],
+    [start.state.x, start.state.y] as const,
+  );
+  const shot = (await page.locator('#gpu').screenshot()).toString('base64');
+  const [swept, untouched] = await page.evaluate(
+    async ([b64, pts]) => {
+      const img = new Image();
+      img.src = `data:image/png;base64,${b64}`;
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext('2d')!;
+      g.drawImage(img, 0, 0);
+      const k = img.width / document.getElementById('gpu')!.clientWidth;
+      return pts.map((p) => [...g.getImageData(Math.round(p.x * k), Math.round(p.y * k), 1, 1).data]);
+    },
+    [shot, points] as const,
+  );
+  const delta = Math.max(...[0, 1, 2].map((i) => Math.abs(swept![i]! - untouched![i]!)));
+  expect(delta, `swept ${String(swept)} vs untouched ${String(untouched)}`).toBeGreaterThan(40);
+
   // Readout text reflects the state: the label is static, so also require the text to have changed.
   await expect(page.locator('#hud')).toContainText('clearance');
   expect(await page.locator('#hud').innerText()).not.toBe(hudBefore);
@@ -80,15 +106,19 @@ test('boots WebGPU, drives, records clearance and envelope', async ({ page }) =>
   expect(reset.firstContactTime).toBeNull();
 });
 
-test('shows a message instead of a blank page without WebGPU', async ({ browser }) => {
+test('shows a message instead of a blank page without WebGL2', async ({ browser }) => {
   const context = await browser.newContext();
   await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'gpu', { value: undefined, configurable: true });
+    const real = Reflect.get(HTMLCanvasElement.prototype, 'getContext') as (this: HTMLCanvasElement, ...args: unknown[]) => unknown;
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+      return args[0] === 'webgl2' ? null : real.apply(this, args);
+    } as typeof HTMLCanvasElement.prototype.getContext;
   });
   const page = await context.newPage();
   await page.goto('/');
   await expect(page.locator('#fatal')).toBeVisible();
-  await expect(page.locator('#fatal')).toContainText('WebGPU');
+  // This sentence comes only from main.ts's WebGlUnavailableError branch; the bare error text would not contain it.
+  await expect(page.locator('#fatal')).toContainText('Requires a browser with WebGL2');
   await context.close();
 });
 

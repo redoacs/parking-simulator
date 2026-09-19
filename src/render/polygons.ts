@@ -1,4 +1,5 @@
-import polyWgsl from './shaders/poly.wgsl?raw';
+import polySrc from './shaders/poly.glsl?raw';
+import { compileProgram, setBlend, type BlendMode } from './gl';
 import { fanTriangles, type Polygon } from '../geom/polygon';
 
 export type RGBA = [number, number, number, number];
@@ -29,62 +30,51 @@ export function buildVertexData(polys: ColoredPolygon[]): Float32Array<ArrayBuff
   return out;
 }
 
-/** A GPU vertex buffer that grows to fit; `vertexCount` is what to draw. */
+/** A vertex buffer and the vertex array that describes it; `vertexCount` is what to draw. */
 export class PolygonBatch {
-  buffer: GPUBuffer;
-  capacityBytes: number;
+  readonly vao: WebGLVertexArrayObject;
+  private readonly buffer: WebGLBuffer;
   vertexCount = 0;
 
-  constructor(
-    private readonly device: GPUDevice,
-    initialBytes = 64 * 1024,
-  ) {
-    this.capacityBytes = initialBytes;
-    this.buffer = device.createBuffer({ size: initialBytes, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+  constructor(private readonly gl: WebGL2RenderingContext) {
+    this.vao = gl.createVertexArray();
+    this.buffer = gl.createBuffer();
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    const stride = FLOATS_PER_VERTEX * 4;
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 4, gl.FLOAT, false, stride, 8);
+    gl.bindVertexArray(null);
   }
 
+  /** Re-specifying the store keeps the buffer object, so the vertex array never needs rebuilding. */
   upload(data: Float32Array<ArrayBuffer>): void {
-    if (data.byteLength > this.capacityBytes) {
-      this.buffer.destroy();
-      this.capacityBytes = Math.max(data.byteLength, this.capacityBytes * 2);
-      this.buffer = this.device.createBuffer({ size: this.capacityBytes, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    }
-    if (data.byteLength > 0) this.device.queue.writeBuffer(this.buffer, 0, data);
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
     this.vertexCount = data.length / FLOATS_PER_VERTEX;
   }
 }
 
-export const POLYGON_VERTEX_LAYOUT: GPUVertexBufferLayout = {
-  arrayStride: FLOATS_PER_VERTEX * 4,
-  attributes: [
-    { shaderLocation: 0, offset: 0, format: 'float32x2' },
-    { shaderLocation: 1, offset: 8, format: 'float32x4' },
-  ],
-};
-
-export const PREMULTIPLIED_BLEND: GPUBlendState = {
-  color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-  alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-};
-
 export class PolygonPipeline {
-  readonly pipeline: GPURenderPipeline;
+  private readonly program: WebGLProgram;
 
-  constructor(device: GPUDevice, format: GPUTextureFormat, cameraLayout: GPUBindGroupLayout, blend: GPUBlendState = PREMULTIPLIED_BLEND) {
-    const module = device.createShaderModule({ code: polyWgsl });
-    this.pipeline = device.createRenderPipeline({
-      layout: device.createPipelineLayout({ bindGroupLayouts: [cameraLayout] }),
-      vertex: { module, entryPoint: 'vs', buffers: [POLYGON_VERTEX_LAYOUT] },
-      fragment: { module, entryPoint: 'fs', targets: [{ format, blend }] },
-      primitive: { topology: 'triangle-list' },
-    });
+  constructor(
+    private readonly gl: WebGL2RenderingContext,
+    private readonly blend: BlendMode = 'premultiplied',
+  ) {
+    this.program = compileProgram(gl, polySrc);
   }
 
-  draw(pass: GPURenderPassEncoder, batch: PolygonBatch, cameraBindGroup: GPUBindGroup): void {
+  /** Draws into whatever framebuffer is bound, with whatever camera block is bound. */
+  draw(batch: PolygonBatch): void {
     if (batch.vertexCount === 0) return;
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, cameraBindGroup);
-    pass.setVertexBuffer(0, batch.buffer);
-    pass.draw(batch.vertexCount);
+    const gl = this.gl;
+    gl.useProgram(this.program);
+    setBlend(gl, this.blend);
+    gl.bindVertexArray(batch.vao);
+    gl.drawArrays(gl.TRIANGLES, 0, batch.vertexCount);
   }
 }

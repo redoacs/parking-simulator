@@ -2,7 +2,7 @@ import taos from './vehicle/data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './vehicle/validate';
 import { deriveVehicle } from './vehicle/derive';
 import { Renderer } from './render/renderer';
-import { WebGpuUnavailableError } from './render/gpu';
+import { WebGlUnavailableError } from './render/gl';
 import { App, type Snapshot } from './app';
 import type { DriveKey } from './ui/input';
 import { decideOnDeviceLoss, type KeyValueStore } from './ui/deviceLoss';
@@ -17,6 +17,8 @@ declare global {
       snapshot(): Snapshot;
       readEnvelopeAt(x: number, y: number): Promise<number>;
       setKey(key: DriveKey, down: boolean): void;
+      /** Canvas-relative CSS pixels for a world point; lets the e2e suite look at what is actually drawn. */
+      worldToCss(x: number, y: number): { x: number; y: number };
     };
   }
 }
@@ -42,15 +44,13 @@ async function main(): Promise<void> {
     renderer = await Renderer.create(canvas);
   } catch (e) {
     showFatal(
-      e instanceof WebGpuUnavailableError
-        ? `${e.message} Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).`
+      e instanceof WebGlUnavailableError
+        ? `${e.message} Requires a browser with WebGL2: any current Chrome, Edge, Firefox or Safari. If yours is current, hardware acceleration may be switched off.`
         : String(e),
     );
     return;
   }
-  // `lost` never rejects, and a throw in the handler reaches the unhandledrejection listener below.
-  void renderer.device.lost.then((info) => {
-    if (info.reason === 'destroyed') return;
+  renderer.onContextLost((message) => {
     let store: KeyValueStore | null = null;
     try {
       store = window.sessionStorage;
@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
     else
       showFatal(
-        `The GPU device was lost (${info.message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`,
+        `The GPU was lost (${message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`,
       );
   });
 
@@ -69,6 +69,7 @@ async function main(): Promise<void> {
     snapshot: () => app.snapshot(),
     readEnvelopeAt: (x, y) => renderer.readEnvelopeAt({ x, y }),
     setKey: (key, down) => app.input.setKey(key, down),
+    worldToCss: (x, y) => renderer.camera.worldToCss({ x, y }),
   };
 
   const panelRoot = document.getElementById('panel')!;

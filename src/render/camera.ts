@@ -36,6 +36,12 @@ export class Camera {
     return { x: clipX / this.scaleX() + this.cx, y: clipY / this.scaleY() + this.cy };
   }
 
+  worldToCss(p: Vec2): Vec2 {
+    const clipX = (p.x - this.cx) * this.scaleX();
+    const clipY = (p.y - this.cy) * this.scaleY();
+    return { x: (((clipX + 1) / 2) * this.widthPx) / this.dpr, y: (((1 - clipY) / 2) * this.heightPx) / this.dpr };
+  }
+
   panByCss(dx: number, dy: number): void {
     this.cx -= (dx * this.dpr) / this.ppm;
     this.cy += (dy * this.dpr) / this.ppm;

@@ -1,6 +1,6 @@
 # Parking Simulator
 
-Top-down, WebGPU-rendered parking instrument: drive a real-dimension vehicle
+Top-down, WebGL2-rendered parking instrument: drive a real-dimension vehicle
 (first: Volkswagen Taos Trendline, MX 2025) through parametric parking
 scenarios and read exact clearances and the swept envelope.
 
@@ -14,13 +14,11 @@ corepack enable pnpm
 pnpm install
 pnpm dev          # http://localhost:5173
 pnpm test         # unit tests (Vitest)
-pnpm test:e2e     # Playwright smoke (needs a WebGPU-capable Chromium)
+pnpm test:e2e     # Playwright smoke (headless Chromium, no flags needed)
 pnpm build        # typecheck + production build in dist/
 ```
 
-Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).
-
-Headless Chromium needs SwiftShader Vulkan for WebGPU: see the flags in `playwright.config.ts`.
+Requires a browser with WebGL2: any current Chrome, Edge, Firefox or Safari, desktop or mobile.
 
 ## Controls
 

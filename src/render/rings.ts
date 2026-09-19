@@ -1,43 +1,34 @@
-import ringWgsl from './shaders/ring.wgsl?raw';
-import { PREMULTIPLIED_BLEND } from './polygons';
+import ringSrc from './shaders/ring.glsl?raw';
+import { compileProgram, setBlend } from './gl';
 import type { RingInstance } from './renderer';
 
 const FLOATS_PER_INSTANCE = 8;
 
 export class RingPipeline {
-  readonly pipeline: GPURenderPipeline;
-  private buffer: GPUBuffer;
-  private capacityBytes = 64 * FLOATS_PER_INSTANCE * 4;
+  private readonly program: WebGLProgram;
+  private readonly vao: WebGLVertexArrayObject;
+  private readonly buffer: WebGLBuffer;
   private count = 0;
 
-  constructor(
-    private readonly device: GPUDevice,
-    format: GPUTextureFormat,
-    cameraLayout: GPUBindGroupLayout,
-  ) {
-    const module = device.createShaderModule({ code: ringWgsl });
-    this.pipeline = device.createRenderPipeline({
-      layout: device.createPipelineLayout({ bindGroupLayouts: [cameraLayout] }),
-      vertex: {
-        module,
-        entryPoint: 'vs',
-        buffers: [
-          {
-            arrayStride: FLOATS_PER_INSTANCE * 4,
-            stepMode: 'instance',
-            attributes: [
-              { shaderLocation: 0, offset: 0, format: 'float32x2' },
-              { shaderLocation: 1, offset: 8, format: 'float32' },
-              { shaderLocation: 2, offset: 12, format: 'float32' },
-              { shaderLocation: 3, offset: 16, format: 'float32x4' },
-            ],
-          },
-        ],
-      },
-      fragment: { module, entryPoint: 'fs', targets: [{ format, blend: PREMULTIPLIED_BLEND }] },
-      primitive: { topology: 'triangle-list' },
-    });
-    this.buffer = device.createBuffer({ size: this.capacityBytes, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+  constructor(private readonly gl: WebGL2RenderingContext) {
+    this.program = compileProgram(gl, ringSrc);
+    this.vao = gl.createVertexArray();
+    this.buffer = gl.createBuffer();
+    gl.bindVertexArray(this.vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    const stride = FLOATS_PER_INSTANCE * 4;
+    // [location, components, byte offset]: centre, radius, thickness, colour. One set per instance.
+    for (const [location, size, offset] of [
+      [0, 2, 0],
+      [1, 1, 8],
+      [2, 1, 12],
+      [3, 4, 16],
+    ] as const) {
+      gl.enableVertexAttribArray(location);
+      gl.vertexAttribPointer(location, size, gl.FLOAT, false, stride, offset);
+      gl.vertexAttribDivisor(location, 1);
+    }
+    gl.bindVertexArray(null);
   }
 
   upload(rings: RingInstance[]): void {
@@ -45,20 +36,18 @@ export class RingPipeline {
     rings.forEach((r, i) => {
       data.set([r.center.x, r.center.y, r.radius, r.thickness, ...r.color], i * FLOATS_PER_INSTANCE);
     });
-    if (data.byteLength > this.capacityBytes) {
-      this.buffer.destroy();
-      this.capacityBytes = Math.max(data.byteLength, this.capacityBytes * 2);
-      this.buffer = this.device.createBuffer({ size: this.capacityBytes, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
-    }
-    if (data.byteLength > 0) this.device.queue.writeBuffer(this.buffer, 0, data);
+    const gl = this.gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
     this.count = rings.length;
   }
 
-  draw(pass: GPURenderPassEncoder, cameraBindGroup: GPUBindGroup): void {
+  draw(): void {
     if (this.count === 0) return;
-    pass.setPipeline(this.pipeline);
-    pass.setBindGroup(0, cameraBindGroup);
-    pass.setVertexBuffer(0, this.buffer);
-    pass.draw(6, this.count);
+    const gl = this.gl;
+    gl.useProgram(this.program);
+    setBlend(gl, 'premultiplied');
+    gl.bindVertexArray(this.vao);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.count);
   }
 }
