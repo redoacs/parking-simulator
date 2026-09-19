@@ -46,7 +46,7 @@ export function createReadouts(hud: HTMLElement, section: HTMLElement): (s: Snap
     speed.value.textContent = `${(s.state.speed * 3.6).toFixed(1)} km/h`;
     time.value.textContent = `${s.simTime.toFixed(1)} s ×${s.timeScale.toFixed(2)}`;
     if (s.parked && s.parkedOffsets) {
-      parked.value.textContent = `yes · lateral ${(s.parkedOffsets.lateral * 100).toFixed(0)} cm · heading ${s.parkedOffsets.headingErrorDeg.toFixed(1)}°`;
+      parked.value.textContent = `yes · left ${(s.parkedOffsets.left * 100).toFixed(0)} cm · right ${(s.parkedOffsets.right * 100).toFixed(0)} cm · heading ${s.parkedOffsets.headingErrorDeg.toFixed(1)}°`;
       parked.value.className = 'value band-ok';
       hudStatus.textContent = 'PARKED';
       hudStatus.className = 'band-ok';

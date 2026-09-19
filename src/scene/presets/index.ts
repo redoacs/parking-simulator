@@ -13,7 +13,7 @@ export function defaultParams(def: PresetDef): Params {
   return Object.fromEntries(def.params.map((p) => [p.key, p.default]));
 }
 
-/** Clamp to [min, max], snap to step, fill missing with defaults, drop unknown keys. */
+/** Clamp to [min, max], snap to step, fill missing with defaults, drop unknown keys, then apply the preset's cross-param rules. */
 export function clampParams(def: PresetDef, raw: Params): Params {
   const out: Params = {};
   for (const p of def.params) {
@@ -26,5 +26,5 @@ export function clampParams(def: PresetDef, raw: Params): Params {
     const snapped = p.min + Math.round((clamped - p.min) / p.step) * p.step;
     out[p.key] = Math.min(p.max, Number(snapped.toFixed(6)));
   }
-  return out;
+  return def.constrain ? def.constrain(out) : out;
 }

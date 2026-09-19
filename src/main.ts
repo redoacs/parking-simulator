@@ -79,6 +79,7 @@ async function main(): Promise<void> {
     onTimeScale: (x) => app.setTimeScale(x),
     onReset: () => app.reset(),
     onFit: () => app.fitView(),
+    onZoom: (f) => app.zoomBy(f),
     bind: (b, k) => app.input.bind(b, k),
   });
   app.onSnapshot = createReadouts(hud, panel.readoutSection);

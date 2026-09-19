@@ -57,3 +57,10 @@ export class Camera {
     this.ppm = Math.min(this.widthPx / w, this.heightPx / h) * 0.9;
   }
 }
+const WHEEL_LINE_PX = 16;
+
+/** Zoom factor for a wheel event. deltaMode: 0 pixels, 1 lines (Firefox with a mouse wheel), 2 pages. */
+export function wheelZoomFactor(deltaY: number, deltaMode: number, pagePx: number): number {
+  const px = deltaMode === 1 ? deltaY * WHEEL_LINE_PX : deltaMode === 2 ? deltaY * pagePx : deltaY;
+  return Math.exp(-px * 0.001);
+}

@@ -42,4 +42,14 @@ describe('StateHistory', () => {
     h.forEach((s) => xs.push(s.x));
     expect(xs).toEqual([2, 3]);
   });
+
+  it('counts evictions so evicted + length is an absolute position', () => {
+    const h = new StateHistory(3);
+    for (let i = 1; i <= 5; i++) h.push(st(i));
+    expect(h.evicted).toBe(2);
+    h.pop();
+    expect(h.evicted + h.length).toBe(4);
+    h.clear();
+    expect(h.evicted).toBe(0);
+  });
 });

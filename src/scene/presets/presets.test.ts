@@ -79,3 +79,21 @@ describe('optional scene features (spec §2)', () => {
     expect(kinds('perpendicular', { neighbours: 0 })).not.toContain('car');
   });
 });
+
+describe('v1.1 preset fixes', () => {
+  it('perpendicular: neighbour cars stay behind the bay line in the shortest bay', () => {
+    const def = getPreset('perpendicular')!;
+    const scene = def.build({ ...defaultParams(def), bayDepth: 4.5 });
+    const cars = scene.obstacles.filter((o) => o.kind === 'car');
+    expect(cars).toHaveLength(2);
+    expect(boundsOf(cars.map((c) => c.polygon)).minY).toBeGreaterThanOrEqual(0);
+  });
+  it('garage: clampParams reports the door and driveway widths the scene is built with', () => {
+    const def = getPreset('garage')!;
+    const out = clampParams(def, { ...defaultParams(def), doorWidth: 3.0, interiorWidth: 2.6, drivewayWidth: 2.5 });
+    expect(out.doorWidth).toBe(2.6);
+    expect(out.drivewayWidth).toBe(2.6);
+    // Already-consistent params pass through untouched.
+    expect(clampParams(def, defaultParams(def))).toEqual(defaultParams(def));
+  });
+});

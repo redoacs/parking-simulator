@@ -34,6 +34,8 @@ export interface PresetDef {
   id: string;
   name: string;
   params: ParamDef[];
+  /** Cross-param rules the per-param ranges cannot express. Applied by `clampParams`, so the UI and hash show what is built. */
+  constrain?(p: Params): Params;
   build(p: Params): Scene;
 }
 

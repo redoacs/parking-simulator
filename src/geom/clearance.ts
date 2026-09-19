@@ -34,16 +34,21 @@ export function isParked(bodyWorld: Polygon, scene: Scene, speed: number): boole
   return speed === 0 && polygonInsideConvex(bodyWorld, scene.target);
 }
 
-/** Target long axis: the longer side of its bounding box (targets are axis-aligned rectangles in v1). */
-export function parkedOffsets(s: VehicleState, scene: Scene): { lateral: number; headingErrorDeg: number } {
-  const b = boundsOf([scene.target]);
-  const cx = (b.minX + b.maxX) / 2;
-  const cy = (b.minY + b.maxY) / 2;
-  const alongX = b.maxX - b.minX >= b.maxY - b.minY;
-  const lateral = alongX ? s.y - cy : -(s.x - cx);
+/**
+ * Gap from the body to each long side of the target, named by the car's own left and right, plus heading
+ * error against the long axis (the longer side of the bounding box: targets are axis-aligned rectangles in v1).
+ */
+export function parkedOffsets(bodyWorld: Polygon, s: VehicleState, scene: Scene): { left: number; right: number; headingErrorDeg: number } {
+  const t = boundsOf([scene.target]);
+  const b = boundsOf([bodyWorld]);
+  const alongX = t.maxX - t.minX >= t.maxY - t.minY;
+  const gapMax = alongX ? t.maxY - b.maxY : t.maxX - b.maxX;
+  const gapMin = alongX ? b.minY - t.minY : b.minX - t.minX;
+  // The car's left normal is (-sin θ, cos θ); it points at the max side when its lateral component is positive.
+  const leftIsMax = (alongX ? Math.cos(s.theta) : -Math.sin(s.theta)) > 0;
   const axis = alongX ? 0 : Math.PI / 2;
   let err = (s.theta - axis) % Math.PI;
   if (err > Math.PI / 2) err -= Math.PI;
   if (err < -Math.PI / 2) err += Math.PI;
-  return { lateral, headingErrorDeg: (err * 180) / Math.PI };
+  return { left: leftIsMax ? gapMax : gapMin, right: leftIsMax ? gapMin : gapMax, headingErrorDeg: (err * 180) / Math.PI };
 }

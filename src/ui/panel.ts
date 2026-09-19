@@ -14,6 +14,7 @@ export interface PanelOptions {
   onTimeScale(x: number): void;
   onReset(): void;
   onFit(): void;
+  onZoom(factor: number): void;
   bind(button: HTMLElement, key: DriveKey): void;
 }
 
@@ -45,13 +46,17 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   const renderParams = (): void => {
     paramsBox.replaceChildren();
     const def = getPreset(presetId)!;
+    const inputs = new Map<string, HTMLInputElement>();
     for (const p of def.params) {
       const input = el('input', { type: 'number', min: String(p.min), max: String(p.max), step: String(p.step), value: String(params[p.key] ?? p.default) });
+      inputs.set(p.key, input);
       input.addEventListener('change', () => {
-        params[p.key] = Number(input.value);
-        params = clampParams(def, params);
-        input.value = String(params[p.key]);
-        emit();
+        // An emptied or unparseable field reads as '': keep the current value rather than let it clamp to the minimum.
+        const edited = input.value !== '';
+        if (edited) params = clampParams(def, { ...params, [p.key]: Number(input.value) });
+        // Rewrite every field: a preset's cross-param rules may have moved another one.
+        for (const [key, other] of inputs) other.value = String(params[key]);
+        if (edited) emit();
       });
       // Committed edits return focus to the canvas so the drive keys work (DriveInput ignores keys aimed at controls).
       // Number inputs commit on Enter only: `change` also fires per arrow/spinner step, and blurring there would end stepping.
@@ -98,6 +103,11 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   resetBtn.addEventListener('click', () => o.onReset());
   const fitBtn = el('button', { type: 'button' }, 'Fit view (F)');
   fitBtn.addEventListener('click', () => o.onFit());
+  // Touch has no wheel, and the narrow layout is where touch is likely.
+  const zoomOutBtn = el('button', { type: 'button' }, 'Zoom −');
+  zoomOutBtn.addEventListener('click', () => o.onZoom(1 / 1.25));
+  const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
+  zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
   const pad = el('div', { class: 'pad' });
   const padKeys: Array<[string, DriveKey]> = [['◀', 'left'], ['▲', 'forward'], ['▶', 'right'], ['⟲ rewind', 'rewind'], ['▼', 'reverse'], ['centre', 'centre']];
   for (const [label, key] of padKeys) {
@@ -107,7 +117,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   }
   const controls = el('fieldset', {}, el('legend', {}, 'Drive'),
     el('label', { class: 'param' }, 'Time scale', timeScale), pad,
-    el('div', { class: 'pad' }, resetBtn, fitBtn),
+    el('div', { class: 'pad' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
     el('p', { class: 'source' }, 'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel to zoom'),
   );
 
