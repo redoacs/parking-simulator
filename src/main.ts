@@ -40,7 +40,7 @@ async function main(): Promise<void> {
   try {
     renderer = await Renderer.create(canvas);
   } catch (e) {
-    showFatal(e instanceof WebGpuUnavailableError ? `${e.message} Use Chrome/Edge 113+, Safari 26+, or Firefox 141+.` : String(e));
+    showFatal(e instanceof WebGpuUnavailableError ? `${e.message} Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).` : String(e));
     return;
   }
   renderer.device.lost.then((info) => {

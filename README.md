@@ -18,7 +18,7 @@ pnpm test:e2e     # Playwright smoke (needs a WebGPU-capable Chromium)
 pnpm build        # typecheck + production build in dist/
 ```
 
-Requires a WebGPU browser: Chrome/Edge 113+, Safari 26+, Firefox 141+.
+Requires a browser with WebGPU enabled: current Chrome or Edge (Linux may need chrome://flags/#enable-unsafe-webgpu), Safari 26+, or Firefox 141+ (Windows first; other platforms in later releases).
 
 Headless Chromium needs SwiftShader Vulkan for WebGPU: see the flags in `playwright.config.ts`.
 
