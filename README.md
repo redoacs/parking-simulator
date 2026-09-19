@@ -25,7 +25,7 @@ Headless Chromium needs SwiftShader Vulkan for WebGPU: see the flags in `playwri
 ## Controls
 
 Arrows / WASD drive · C centre steering · Space stop · Z hold to rewind ·
-R reset · F fit view · drag to pan · wheel to zoom.
+R reset · F fit view · drag to pan · wheel or the Zoom −/+ buttons to zoom.
 
 ## Vehicle data
 

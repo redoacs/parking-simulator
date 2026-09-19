@@ -1,7 +1,6 @@
 import { checkClearance, isParked, parkedOffsets, worldOutline, type Clearance } from './geom/clearance';
 import { transformPolygon, type Polygon } from './geom/polygon';
 import { guideCircles } from './geom/turning';
-import { wheelZoomFactor } from './render/camera';
 import type { Renderer } from './render/renderer';
 import { ringInstancesFor, rulerPolygon, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import type { ColoredPolygon } from './render/polygons';
@@ -42,7 +41,7 @@ export class App {
   private mirrors = true;
   private timeScale = 1;
   private state: VehicleState = this.scene.start;
-  private readonly history = new StateHistory(Math.round(HISTORY_SECONDS / SIM_DT));
+  private readonly history: StateHistory;
   private simTime = 0;
   private firstContactTime: number | null = null;
   /** `history.evicted + history.length` at first contact: a length alone shifts once the ring evicts. */
@@ -62,7 +61,9 @@ export class App {
     private readonly canvas: HTMLCanvasElement,
     private readonly renderer: Renderer,
     private readonly vehicle: DerivedVehicle,
+    historySeconds = HISTORY_SECONDS,
   ) {
+    this.history = new StateHistory(Math.round(historySeconds / SIM_DT));
     this.simParams = simParamsFor(vehicle);
     this.attachCameraControls();
     this.input.attach(window);
@@ -260,7 +261,7 @@ export class App {
     this.canvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       const r = this.canvas.getBoundingClientRect();
-      cam.zoomAtCss(e.clientX - r.left, e.clientY - r.top, wheelZoomFactor(e.deltaY, e.deltaMode, r.height));
+      cam.zoomAtCss(e.clientX - r.left, e.clientY - r.top, Math.exp(-e.deltaY * 0.001));
     }, { passive: false });
   }
 }

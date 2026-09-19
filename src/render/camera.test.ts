@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Camera, wheelZoomFactor } from './camera';
+import { Camera } from './camera';
 
 describe('Camera', () => {
   const cam = () => {
@@ -55,15 +55,5 @@ describe('Camera', () => {
     expect(c.cx).toBe(20);
     expect(c.cy).toBe(5);
     expect(c.ppm).toBeCloseTo((800 / 40) * 0.9, 12);
-  });
-});
-describe('wheelZoomFactor', () => {
-  it('scrolling up zooms in, down zooms out', () => {
-    expect(wheelZoomFactor(-100, 0, 600)).toBeGreaterThan(1);
-    expect(wheelZoomFactor(100, 0, 600)).toBeLessThan(1);
-  });
-  it('line and page deltas are converted to pixels', () => {
-    expect(wheelZoomFactor(3, 1, 600)).toBeCloseTo(wheelZoomFactor(48, 0, 600), 12);
-    expect(wheelZoomFactor(1, 2, 600)).toBeCloseTo(wheelZoomFactor(600, 0, 600), 12);
   });
 });

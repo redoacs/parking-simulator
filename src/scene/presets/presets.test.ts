@@ -96,4 +96,23 @@ describe('v1.1 preset fixes', () => {
     // Already-consistent params pass through untouched.
     expect(clampParams(def, defaultParams(def))).toEqual(defaultParams(def));
   });
+  it.each(PRESETS.map((p) => [p.id, p] as const))('%s: clampParams is idempotent on every grid point of each param pair', (_id, def) => {
+    // A hash written from clamped params must decode to the same scene.
+    const values = (p: (typeof def.params)[number]): number[] => {
+      const out: number[] = [];
+      for (let i = 0; p.min + i * p.step <= p.max + 1e-9; i++) out.push(p.min + i * p.step);
+      return out;
+    };
+    for (const a of def.params) {
+      for (const b of def.params) {
+        if (a.key >= b.key) continue;
+        for (const va of values(a)) {
+          for (const vb of values(b)) {
+            const once = clampParams(def, { ...defaultParams(def), [a.key]: va, [b.key]: vb });
+            expect(clampParams(def, once)).toEqual(once);
+          }
+        }
+      }
+    }
+  });
 });

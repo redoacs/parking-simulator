@@ -52,11 +52,12 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
       inputs.set(p.key, input);
       input.addEventListener('change', () => {
         // An emptied or unparseable field reads as '': keep the current value rather than let it clamp to the minimum.
-        const edited = input.value !== '';
-        if (edited) params = clampParams(def, { ...params, [p.key]: Number(input.value) });
+        const next = input.value === '' ? params : clampParams(def, { ...params, [p.key]: Number(input.value) });
+        const changed = def.params.some((q) => next[q.key] !== params[q.key]);
+        params = next;
         // Rewrite every field: a preset's cross-param rules may have moved another one.
         for (const [key, other] of inputs) other.value = String(params[key]);
-        if (edited) emit();
+        if (changed) emit(); // a commit that changes nothing must not restart the run
       });
       // Committed edits return focus to the canvas so the drive keys work (DriveInput ignores keys aimed at controls).
       // Number inputs commit on Enter only: `change` also fires per arrow/spinner step, and blurring there would end stepping.
@@ -117,8 +118,8 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   }
   const controls = el('fieldset', {}, el('legend', {}, 'Drive'),
     el('label', { class: 'param' }, 'Time scale', timeScale), pad,
-    el('div', { class: 'pad' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
-    el('p', { class: 'source' }, 'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel to zoom'),
+    el('div', { class: 'pad two' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
+    el('p', { class: 'source' }, 'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom'),
   );
 
   const readoutSection = el('fieldset', {}, el('legend', {}, 'Readouts'));

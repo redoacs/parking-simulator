@@ -107,11 +107,16 @@ test('panel: cross-param corrections are shown, empty input keeps its value, zoo
   expect((await page.evaluate(() => window.__sim!.snapshot().params)).doorWidth).toBe(2.6);
   expect(page.url()).toContain('doorWidth=2.6');
 
-  // Clearing a field is not an edit: it must not commit the minimum (5.0).
+  // Clearing a field is not an edit: it must not commit the minimum (5.0) or restart the run.
+  await page.evaluate(() => window.__sim!.setKey('forward', true));
+  await page.waitForFunction(() => window.__sim!.snapshot().historyLength > 30, null, { timeout: 15_000 });
+  await page.evaluate(() => window.__sim!.setKey('forward', false));
   await field('Interior depth').fill('');
   await field('Interior depth').press('Enter');
   await expect(field('Interior depth')).toHaveValue('5.5');
-  expect((await page.evaluate(() => window.__sim!.snapshot().params)).interiorDepth).toBe(5.5);
+  const kept = await page.evaluate(() => window.__sim!.snapshot());
+  expect(kept.params.interiorDepth).toBe(5.5);
+  expect(kept.historyLength).toBeGreaterThan(30);
 
   const stage = page.locator('#gpu');
   const before = await stage.screenshot();

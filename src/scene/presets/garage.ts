@@ -3,18 +3,18 @@ import { BOUNDS_PAD, type Obstacle, type Params, type PresetDef, type Scene } fr
 
 const WALL = 0.2;
 
-/**
- * Garage interior x in [0, interiorWidth], y in [0, interiorDepth], door in the
- * front wall (y = 0) centred on the interior. Driveway extends toward -y from
- * the door, flanked by kerbs. approachAngle 0: start on the driveway facing the
- * door. approachAngle 90: start on a street along x below the driveway, heading -x.
- */
 /** The door cannot exceed the interior; the driveway is at least as wide as the door. */
 function constrain(p: Params): Params {
   const doorWidth = Math.min(p.doorWidth!, p.interiorWidth!);
   return { ...p, doorWidth, drivewayWidth: Math.max(p.drivewayWidth!, doorWidth) };
 }
 
+/**
+ * Garage interior x in [0, interiorWidth], y in [0, interiorDepth], door in the
+ * front wall (y = 0) centred on the interior. Driveway extends toward -y from
+ * the door, flanked by kerbs. approachAngle 0: start on the driveway facing the
+ * door. approachAngle 90: start on a street along x below the driveway, heading -x.
+ */
 export const garage: PresetDef = {
   id: 'garage',
   name: 'Single garage with driveway',
@@ -22,7 +22,7 @@ export const garage: PresetDef = {
     { key: 'doorWidth', label: 'Door opening', unit: 'm', min: 2.2, max: 3.0, step: 0.05, default: 2.4 },
     { key: 'interiorWidth', label: 'Interior width', unit: 'm', min: 2.6, max: 4.0, step: 0.05, default: 3.0 },
     { key: 'interiorDepth', label: 'Interior depth', unit: 'm', min: 5.0, max: 7.0, step: 0.1, default: 5.5 },
-    { key: 'drivewayWidth', label: 'Driveway width', unit: 'm', min: 2.5, max: 4.0, step: 0.1, default: 3.0 },
+    { key: 'drivewayWidth', label: 'Driveway width', unit: 'm', min: 2.5, max: 4.0, step: 0.05, default: 3.0 }, // same grid as doorWidth: constrain copies one into the other
     { key: 'drivewayLength', label: 'Driveway length', unit: 'm', min: 3.0, max: 8.0, step: 0.1, default: 5.0 },
     { key: 'approachAngle', label: 'Approach', unit: 'deg', min: 0, max: 90, step: 90, default: 0 },
   ],
