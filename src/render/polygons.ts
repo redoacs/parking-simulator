@@ -49,10 +49,6 @@ export class PolygonBatch {
     if (data.byteLength > 0) this.device.queue.writeBuffer(this.buffer, 0, data);
     this.vertexCount = data.length / FLOATS_PER_VERTEX;
   }
-
-  destroy(): void {
-    this.buffer.destroy();
-  }
 }
 
 export const POLYGON_VERTEX_LAYOUT: GPUVertexBufferLayout = {
@@ -71,12 +67,12 @@ export const PREMULTIPLIED_BLEND: GPUBlendState = {
 export class PolygonPipeline {
   readonly pipeline: GPURenderPipeline;
 
-  constructor(device: GPUDevice, format: GPUTextureFormat, cameraLayout: GPUBindGroupLayout, blend: GPUBlendState | undefined = PREMULTIPLIED_BLEND) {
+  constructor(device: GPUDevice, format: GPUTextureFormat, cameraLayout: GPUBindGroupLayout, blend: GPUBlendState = PREMULTIPLIED_BLEND) {
     const module = device.createShaderModule({ code: polyWgsl });
     this.pipeline = device.createRenderPipeline({
       layout: device.createPipelineLayout({ bindGroupLayouts: [cameraLayout] }),
       vertex: { module, entryPoint: 'vs', buffers: [POLYGON_VERTEX_LAYOUT] },
-      fragment: { module, entryPoint: 'fs', targets: [blend ? { format, blend } : { format }] },
+      fragment: { module, entryPoint: 'fs', targets: [{ format, blend }] },
       primitive: { topology: 'triangle-list' },
     });
   }

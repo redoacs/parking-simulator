@@ -4,7 +4,7 @@ import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } 
 /**
  * Bay opens toward -y onto an aisle. Target x in [0, bayWidth], y in [0, bayDepth].
  * Wall behind the bay row, neighbour cars either side, aisle y in [-aisleWidth, 0].
- * Car starts in the aisle heading -x with the bay on its left, ready to reverse in.
+ * Car starts in the aisle heading -x (theta = pi), so the bay at +y is on its right, ready to reverse in.
  * `neighbours` (flag) omits the two neighbour cars when 0.
  */
 export const perpendicular: PresetDef = {

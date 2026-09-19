@@ -1,0 +1,9 @@
+node_modules/
+dist/
+pnpm-lock.yaml
+docs/
+.superpowers/
+.playwright-mcp/
+playwright-report/
+test-results/
+.worktrees/

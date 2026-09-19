@@ -172,7 +172,7 @@ export class App {
   private simulate(dt: number): void {
     this.accumulator += dt;
     let steps = 0;
-    while (this.accumulator >= SIM_DT && steps < 240) {
+    while (this.accumulator >= SIM_DT) {
       const u = this.input.control(this.state, this.simParams);
       const next = stepVehicle(this.state, u, this.simParams, SIM_DT);
       const moved = next.x !== this.state.x || next.y !== this.state.y || next.theta !== this.state.theta;

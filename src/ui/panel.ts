@@ -99,10 +99,10 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   const fitBtn = el('button', { type: 'button' }, 'Fit view (F)');
   fitBtn.addEventListener('click', () => o.onFit());
   const pad = el('div', { class: 'pad' });
-  const padKeys: Array<[string, DriveKey | null]> = [['◀', 'left'], ['▲', 'forward'], ['▶', 'right'], ['⟲ rewind', 'rewind'], ['▼', 'reverse'], ['centre', 'centre']];
+  const padKeys: Array<[string, DriveKey]> = [['◀', 'left'], ['▲', 'forward'], ['▶', 'right'], ['⟲ rewind', 'rewind'], ['▼', 'reverse'], ['centre', 'centre']];
   for (const [label, key] of padKeys) {
     const b = el('button', { type: 'button' }, label);
-    if (key) o.bind(b, key);
+    o.bind(b, key);
     pad.append(b);
   }
   const controls = el('fieldset', {}, el('legend', {}, 'Drive'),

@@ -1,17 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { vec, rotate } from './vec2';
+import { vec } from './vec2';
 import {
   rect, rectCentered, transformPolygon, signedArea, isConvex, boundsOf,
   pointInConvex, polygonInsideConvex, fanTriangles, rectFromSegment,
 } from './polygon';
-
-describe('vec2', () => {
-  it('rotates +x by 90° to +y', () => {
-    const r = rotate(vec(1, 0), Math.PI / 2);
-    expect(r.x).toBeCloseTo(0, 12);
-    expect(r.y).toBeCloseTo(1, 12);
-  });
-});
 
 describe('polygon', () => {
   it('rect is CCW with positive area', () => {

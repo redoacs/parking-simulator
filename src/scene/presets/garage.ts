@@ -51,9 +51,9 @@ export const garage: PresetDef = {
     const b = boundsOf([target, ...obstacles.map((o) => o.polygon)]);
     return {
       bounds: {
-        minX: Math.min(b.minX, side ? iw / 2 - 12 : b.minX) - BOUNDS_PAD,
+        minX: b.minX - BOUNDS_PAD,
         minY: Math.min(b.minY, side ? -dvl - streetWidth : -dvl - 5) - BOUNDS_PAD,
-        maxX: Math.max(b.maxX, side ? iw / 2 + 12 : b.maxX) + BOUNDS_PAD,
+        maxX: b.maxX + BOUNDS_PAD,
         maxY: b.maxY + BOUNDS_PAD,
       },
       obstacles,
