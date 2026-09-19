@@ -152,7 +152,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   zoomOutBtn.addEventListener('click', () => o.onZoom(1 / 1.25));
   const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
   zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
-  const pad = el('div', { class: 'pad' });
+  const pad = el('div', { class: 'pad wide-only' });
   const padKeys: [string, DriveKey][] = [
     ['◀', 'left'],
     ['▲', 'forward'],
@@ -175,7 +175,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     el('div', { class: 'pad two' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
     el(
       'p',
-      { class: 'source' },
+      { class: 'source wide-only' },
       'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
     ),
   );

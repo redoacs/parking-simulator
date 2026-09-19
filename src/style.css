@@ -18,6 +18,8 @@ html,
 body {
   margin: 0;
   height: 100%;
+  height: 100dvh; /* follows the phone browser's bars; the line above is the fallback */
+  overscroll-behavior: none;
   background: var(--bg);
   color: var(--fg);
 }
@@ -139,13 +141,113 @@ button:active {
   color: var(--muted);
   font-size: 11px;
 }
-@media (max-width: 720px) {
+#overlay {
+  display: none;
+}
+
+/*
+ * Compact layout: anything narrow, and anything driven by touch (a tablet in landscape is wide but has no keyboard).
+ * The scene fills the screen, the drive controls sit under the thumbs, and the panel becomes a sheet.
+ */
+@media (max-width: 899px), (pointer: coarse) {
   #app {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr auto;
+    display: block;
+  }
+  #stage {
+    position: fixed;
+    inset: 0;
+  }
+  #hud {
+    left: calc(12px + env(safe-area-inset-left));
+    top: calc(12px + env(safe-area-inset-top));
   }
   #panel {
-    order: 2;
-    max-height: 45vh;
+    position: fixed;
+    z-index: 2;
+    inset: 0 auto 0 0;
+    width: min(360px, 88vw);
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+    transform: translateX(-100%);
+    visibility: hidden; /* off-screen controls must not be focusable */
+    transition:
+      transform 0.18s ease-out,
+      visibility 0s linear 0.18s;
+    box-shadow: 0 0 24px rgb(0 0 0 / 50%);
+  }
+  .sheet-open #panel {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.18s ease-out;
+  }
+  .wide-only {
+    display: none;
+  }
+  input[type='number'],
+  select {
+    font-size: 16px; /* below 16px, iOS Safari zooms the page when a field is focused */
+    padding: 8px;
+  }
+  #panel button {
+    min-height: 48px;
+  }
+
+  #overlay {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none; /* the scene between the controls still pans and pinches */
+    z-index: 1;
+  }
+  #overlay button {
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    font-size: 22px;
+    border-radius: 12px;
+    background: rgb(42 49 64 / 78%);
+  }
+  #overlay button:active {
+    background: rgb(74 88 116 / 90%);
+  }
+  #overlay button.small {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+  #overlay .menu {
+    position: absolute;
+    top: calc(8px + env(safe-area-inset-top));
+    right: calc(8px + env(safe-area-inset-right));
+    width: 48px;
+    height: 48px;
+  }
+  #overlay .thumb {
+    position: absolute;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #overlay .thumb.left {
+    left: calc(16px + env(safe-area-inset-left));
+    align-items: flex-start;
+  }
+  #overlay .thumb.right {
+    right: calc(16px + env(safe-area-inset-right));
+    align-items: flex-end;
+  }
+  #overlay .row,
+  #overlay .column {
+    display: flex;
+    gap: 10px;
+  }
+  #overlay .column {
+    flex-direction: column;
   }
 }

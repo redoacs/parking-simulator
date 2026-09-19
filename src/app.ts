@@ -1,6 +1,7 @@
 import { checkClearance, isParked, parkedOffsets, worldOutline, type Clearance } from './geom/clearance';
 import { transformPolygon, type Polygon } from './geom/polygon';
 import { guideCircles } from './geom/turning';
+import type { Insets } from './render/camera';
 import type { Renderer } from './render/renderer';
 import { ringInstancesFor, rulerPolygon, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import type { ColoredPolygon } from './render/polygons';
@@ -36,6 +37,12 @@ export class App {
   onSnapshot?: (s: Snapshot) => void;
   /** A press on the scene itself, not on a control laid over it. The compact layout uses it to close the settings sheet. */
   onCanvasPress?: () => void;
+  /**
+   * Areas of the canvas that controls laid over it leave free, as insets in CSS pixels. Several candidates may be given
+   * (below the HUD and above a bottom band of controls, or between two side columns); fitView uses whichever shows the
+   * scene larger. None means the whole canvas.
+   */
+  viewInsets?: () => Insets[];
 
   private presetId = PRESETS[0]!.id;
   private params: Params = defaultParams(PRESETS[0]!);
@@ -113,7 +120,18 @@ export class App {
 
   fitView(): void {
     this.renderer.resize();
-    this.renderer.camera.fit(this.scene.bounds);
+    const cam = this.renderer.camera;
+    const candidates = this.viewInsets?.() ?? [];
+    let best: Insets | undefined;
+    let bestPpm = 0;
+    for (const inset of candidates) {
+      cam.fit(this.scene.bounds, inset);
+      if (cam.ppm > bestPpm) {
+        bestPpm = cam.ppm;
+        best = inset;
+      }
+    }
+    cam.fit(this.scene.bounds, best);
   }
 
   snapshot(): Snapshot {

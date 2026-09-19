@@ -68,6 +68,30 @@ describe('Camera', () => {
     expect(c.ppm).toBeCloseTo((800 / 40) * 0.9, 12);
   });
 
+  it('fit with insets keeps the scene inside the free area and centres it there', () => {
+    const c = new Camera();
+    c.resize(780, 1688, 2); // 390 x 844 CSS px at dpr 2
+    const scene = { minX: -6, minY: -8, maxX: 2, maxY: 16 };
+    const inset = { top: 56, right: 0, bottom: 230, left: 0 };
+    c.fit(scene, inset);
+    const topLeft = c.worldToCss({ x: scene.minX, y: scene.maxY });
+    const bottomRight = c.worldToCss({ x: scene.maxX, y: scene.minY });
+    expect(topLeft.x).toBeGreaterThanOrEqual(0);
+    expect(topLeft.y).toBeGreaterThanOrEqual(56);
+    expect(bottomRight.x).toBeLessThanOrEqual(390);
+    expect(bottomRight.y).toBeLessThanOrEqual(844 - 230);
+    const centre = c.worldToCss({ x: -2, y: 4 });
+    expect(centre.x).toBeCloseTo(195, 6);
+    expect(centre.y).toBeCloseTo(56 + (844 - 230 - 56) / 2, 6);
+    // Without insets the behaviour is what it always was.
+    const plain = new Camera();
+    plain.resize(780, 1688, 2);
+    plain.fit(scene);
+    expect(plain.cx).toBe(-2);
+    expect(plain.cy).toBe(4);
+    expect(plain.ppm).toBeCloseTo(Math.min(780 / 8, 1688 / 24) * 0.9, 9);
+  });
+
   describe('pinchCss', () => {
     it('a spread about a fixed midpoint zooms by the distance ratio and keeps the midpoint fixed', () => {
       const c = cam();

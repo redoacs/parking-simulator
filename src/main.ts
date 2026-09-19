@@ -7,6 +7,7 @@ import { App, type Snapshot } from './app';
 import type { DriveKey } from './ui/input';
 import { decideOnDeviceLoss, type KeyValueStore } from './ui/deviceLoss';
 import { decodeHash, encodeHash, type HashState } from './ui/hash';
+import { buildOverlay } from './ui/overlay';
 import { buildPanel } from './ui/panel';
 import { createReadouts } from './ui/readouts';
 import { PRESETS, defaultParams } from './scene/presets';
@@ -96,6 +97,20 @@ async function main(): Promise<void> {
     bind: (b, k) => app.input.bind(b, k),
   });
   app.onSnapshot = createReadouts(hud, panel.readoutSection);
+  // Compact layout: the panel is a sheet over the scene. The class does nothing in the wide layout.
+  const overlay = buildOverlay(document.getElementById('overlay')!, {
+    bind: (b, k) => {
+      app.input.bind(b, k);
+    },
+    onZoom: (f) => {
+      app.zoomBy(f);
+    },
+    onMenu: () => document.body.classList.toggle('sheet-open'),
+  });
+  app.viewInsets = () => overlay.freeAreas();
+  app.onCanvasPress = () => {
+    document.body.classList.remove('sheet-open');
+  };
   window.addEventListener('hashchange', () => {
     const h = decodeHash(location.hash);
     if (h) {
