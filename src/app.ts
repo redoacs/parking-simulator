@@ -35,11 +35,9 @@ export interface Snapshot {
 export class App {
   readonly input = new DriveInput();
   onSnapshot?: (s: Snapshot) => void;
-  /** A press on the scene itself, not on a control laid over it. The compact layout uses it to close the settings sheet. */
-  onCanvasPress?: () => void;
   /**
    * Areas of the canvas that controls laid over it leave free, as insets in CSS pixels. Several candidates may be given
-   * (below the HUD and above a bottom band of controls, or between two side columns); fitView uses whichever shows the
+   * (below the menu button and above a bottom band of controls, or between two side columns); fitView uses whichever shows the
    * scene larger. None means the whole canvas.
    */
   viewInsets?: () => Insets[];
@@ -76,7 +74,16 @@ export class App {
     this.simParams = simParamsFor(vehicle);
     this.attachCameraControls();
     this.input.attach(window);
-    new ResizeObserver(() => this.renderer.resize()).observe(canvas);
+    // Turning a phone flips the canvas between portrait and landscape, and the free area with it: fit again, or the scene
+    // keeps the old scale and overflows. Any other resize (a window drag, a phone's toolbar sliding away) keeps the
+    // user's view.
+    let wasPortrait: boolean | undefined;
+    new ResizeObserver(() => {
+      const portrait = canvas.clientHeight >= canvas.clientWidth;
+      if (wasPortrait !== undefined && portrait !== wasPortrait) this.fitView();
+      else this.renderer.resize();
+      wasPortrait = portrait;
+    }).observe(canvas);
   }
 
   setPreset(id: string, params: Params): void {
@@ -265,7 +272,7 @@ export class App {
       return { x: e.clientX - r.left, y: e.clientY - r.top };
     };
     this.canvas.addEventListener('pointerdown', (e) => {
-      this.onCanvasPress?.();
+      if (e.pointerType === 'mouse' && e.button !== 0) return; // a right-click opens a menu that swallows the pointerup
       if (pointers.size >= 2) return;
       pointers.set(e.pointerId, at(e));
       this.canvas.setPointerCapture(e.pointerId);
@@ -273,6 +280,10 @@ export class App {
     this.canvas.addEventListener('pointermove', (e) => {
       const prev = pointers.get(e.pointerId);
       if (!prev) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) {
+        pointers.delete(e.pointerId); // the release was missed (it went to a native menu, or happened off-window)
+        return;
+      }
       const now = at(e);
       if (pointers.size === 1) {
         cam.panByCss(now.x - prev.x, now.y - prev.y);

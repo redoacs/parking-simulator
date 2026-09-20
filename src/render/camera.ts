@@ -65,7 +65,8 @@ export class Camera {
 
   /**
    * Two-finger gesture between two frames, in canvas-relative CSS pixels: zoom about the previous midpoint by the change
-   * in finger distance, then pan by the midpoint's movement. The world point under each finger stays under it.
+   * in finger distance, then pan by the midpoint's movement. The world point under each finger stays under it, as long
+   * as the fingers do not twist about each other (the view never rotates).
    */
   pinchCss(prevA: Vec2, prevB: Vec2, a: Vec2, b: Vec2): void {
     const prevDist = Math.hypot(prevB.x - prevA.x, prevB.y - prevA.y);

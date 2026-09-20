@@ -18,8 +18,6 @@ html,
 body {
   margin: 0;
   height: 100%;
-  height: 100dvh; /* follows the phone browser's bars; the line above is the fallback */
-  overscroll-behavior: none;
   background: var(--bg);
   color: var(--fg);
 }
@@ -58,6 +56,7 @@ body {
 #fatal {
   position: absolute;
   inset: 0;
+  z-index: 3; /* above the overlay controls: a fatal message must not have live buttons drawn over it */
   display: grid;
   place-items: center;
   padding: 24px;
@@ -150,6 +149,10 @@ button:active {
  * The scene fills the screen, the drive controls sit under the thumbs, and the panel becomes a sheet.
  */
 @media (max-width: 899px), (pointer: coarse) {
+  html,
+  body {
+    overscroll-behavior: none; /* no pull-to-refresh or scroll chaining out of the sheet */
+  }
   #app {
     display: block;
   }
@@ -165,7 +168,7 @@ button:active {
     position: fixed;
     z-index: 2;
     inset: 0 auto 0 0;
-    width: min(360px, 88vw);
+    width: min(360px, calc(100vw - 64px)); /* always leaves the menu button uncovered */
     padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
     transform: translateX(-100%);
     visibility: hidden; /* off-screen controls must not be focusable */
@@ -181,6 +184,13 @@ button:active {
   }
   .wide-only {
     display: none;
+  }
+  /* While the sheet is open the thumb controls are partly under it; a sliver of ▲ must not drive the car. */
+  .sheet-open #overlay .thumb {
+    visibility: hidden;
+  }
+  #panel:focus {
+    outline: none;
   }
   input[type='number'],
   select {
@@ -249,5 +259,12 @@ button:active {
   }
   #overlay .column {
     flex-direction: column;
+  }
+}
+
+/* The keyboard legend is useless on touch, but a narrow desktop window still has a keyboard. */
+@media (pointer: coarse) {
+  .keys-hint {
+    display: none;
   }
 }

@@ -175,7 +175,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     el('div', { class: 'pad two' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
     el(
       'p',
-      { class: 'source wide-only' },
+      { class: 'source keys-hint' },
       'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
     ),
   );

@@ -79,6 +79,14 @@ test.describe('phone layout', () => {
     const origin = (): Promise<{ x: number; y: number }> => page.evaluate(() => window.__sim!.worldToCss(0, 0));
 
     const before = await span();
+    // The world point under the fingers' midpoint (195, 300) must still be there afterwards: a zoom by the right ratio
+    // about the wrong anchor would move it.
+    const anchorWorld = await page.evaluate(() => {
+      const o = window.__sim!.worldToCss(0, 0);
+      const x1 = window.__sim!.worldToCss(1, 0);
+      const y1 = window.__sim!.worldToCss(0, 1);
+      return { x: (195 - o.x) / (x1.x - o.x), y: (300 - o.y) / (y1.y - o.y) };
+    });
     const a = { x: 170, y: 300, id: 1 };
     const b = { x: 220, y: 300, id: 2 };
     await touch(cdp, 'touchStart', [a, b]);
@@ -92,6 +100,9 @@ test.describe('phone layout', () => {
     // Finger distance went 50 -> 210 px, so the zoom should be about 4.2x.
     expect(after / before).toBeGreaterThan(3.8);
     expect(after / before).toBeLessThan(4.6);
+    const anchorNow = await page.evaluate(([x, y]) => window.__sim!.worldToCss(x, y), [anchorWorld.x, anchorWorld.y] as const);
+    expect(anchorNow.x).toBeCloseTo(195, 0);
+    expect(anchorNow.y).toBeCloseTo(300, 0);
 
     const held = await origin();
     const button = { ...(await centre(page.getByRole('button', { name: 'Steer right' }))), id: 3 };
@@ -101,6 +112,63 @@ test.describe('phone layout', () => {
     const stillThere = await origin();
     expect(stillThere.x).toBeCloseTo(held.x, 3);
     expect(stillThere.y).toBeCloseTo(held.y, 3);
+  });
+
+  test('a second thumb can tap Zoom and the menu while the first holds a steering button', async ({ page }) => {
+    await boot(page);
+    const cdp = await page.context().newCDPSession(page);
+    const span = (): Promise<number> =>
+      page.evaluate(() => {
+        const p = window.__sim!.worldToCss(0, 0);
+        const q = window.__sim!.worldToCss(0, 1);
+        return Math.hypot(q.x - p.x, q.y - p.y);
+      });
+    const before = await span();
+    const hold = { ...(await centre(page.getByRole('button', { name: 'Steer left' }))), id: 1 };
+    const zoomIn = { ...(await centre(page.getByRole('button', { name: 'Zoom in' }))), id: 2 };
+    await touch(cdp, 'touchStart', [hold]);
+    // Browsers synthesise no `click` for this second finger, so a click-only button would ignore it.
+    await touch(cdp, 'touchStart', [hold, zoomIn]);
+    await touch(cdp, 'touchEnd', [hold]);
+    expect((await span()) / before).toBeCloseTo(1.25, 2);
+
+    const menu = { ...(await centre(page.getByRole('button', { name: 'Settings' }))), id: 3 };
+    await touch(cdp, 'touchStart', [hold, menu]);
+    await touch(cdp, 'touchEnd', [hold]);
+    await expect(page.locator('#panel')).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-expanded', 'true');
+    // Partly covered by the sheet, the thumb controls must not stay live underneath it.
+    await expect(page.getByRole('button', { name: 'Forward', exact: true })).toBeHidden();
+    await touch(cdp, 'touchEnd', []);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#panel')).not.toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Settings' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('turning the phone re-fits the scene between the thumb columns', async ({ page }) => {
+    await boot(page);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForTimeout(400);
+    const leftEdge = (await page.locator('#overlay .thumb.left').boundingBox())!;
+    const rightEdge = (await page.locator('#overlay .thumb.right').boundingBox())!;
+    // Default parallel scene, after its quarter turn: bounds run from y = -9 to y = 19.2 (the street frame's x range:
+    // 4.5 m neighbours, 3 m of kerb beyond each, 1.5 m padding, 4 m extra ahead of the car).
+    const pts = await page.evaluate(() => {
+      const s = window.__sim!.snapshot().state;
+      return {
+        top: window.__sim!.worldToCss(s.x, 19.2),
+        bottom: window.__sim!.worldToCss(s.x, -9),
+        car: window.__sim!.worldToCss(s.x, s.y),
+      };
+    });
+    // The whole scene is on screen: a stale portrait scale would overflow top and bottom...
+    expect(pts.top.y).toBeGreaterThanOrEqual(0);
+    expect(pts.bottom.y).toBeLessThanOrEqual(390);
+    // ...and it uses the height between the columns (fit leaves 10 %), not a strip above the controls.
+    expect(pts.bottom.y - pts.top.y).toBeGreaterThan(0.8 * 390);
+    expect(pts.car.x).toBeGreaterThan(leftEdge.x + leftEdge.width);
+    expect(pts.car.x).toBeLessThan(rightEdge.x);
   });
 
   test('the scene is fitted clear of the thumb controls', async ({ page }) => {

@@ -98,6 +98,15 @@ async function main(): Promise<void> {
   });
   app.onSnapshot = createReadouts(hud, panel.readoutSection);
   // Compact layout: the panel is a sheet over the scene. The class does nothing in the wide layout.
+  const setSheet = (open: boolean): void => {
+    const wasOpen = document.body.classList.contains('sheet-open');
+    document.body.classList.toggle('sheet-open', open);
+    const menu = document.querySelector('#overlay .menu');
+    menu?.setAttribute('aria-expanded', String(open));
+    // Keyboard users: the panel comes before the stage in the DOM, so without this the next Tab lands under the sheet.
+    if (open && !wasOpen) panelRoot.focus();
+    else if (!open && wasOpen && menu instanceof HTMLElement && panelRoot.contains(document.activeElement)) menu.focus();
+  };
   const overlay = buildOverlay(document.getElementById('overlay')!, {
     bind: (b, k) => {
       app.input.bind(b, k);
@@ -105,12 +114,18 @@ async function main(): Promise<void> {
     onZoom: (f) => {
       app.zoomBy(f);
     },
-    onMenu: () => document.body.classList.toggle('sheet-open'),
+    onMenu: () => {
+      setSheet(!document.body.classList.contains('sheet-open'));
+    },
   });
   app.viewInsets = () => overlay.freeAreas();
-  app.onCanvasPress = () => {
-    document.body.classList.remove('sheet-open');
-  };
+  // A press on the scene, or Escape, closes the sheet.
+  canvas.addEventListener('pointerdown', () => {
+    setSheet(false);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setSheet(false);
+  });
   window.addEventListener('hashchange', () => {
     const h = decodeHash(location.hash);
     if (h) {

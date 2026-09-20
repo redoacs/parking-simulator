@@ -202,7 +202,7 @@ pointer — is the panel beside the scene, as above. Anything narrower or
 touch-driven gets the compact layout: the scene fills the screen; steering
 (◀ ▶, with rewind and centre) sits under the left thumb and forward/reverse
 (▲ ▼, with zoom −/+) under the right, so two thumbs can hold two controls at
-once; ☰ opens the same panel as a sheet, and a press on the scene closes it.
+once, or hold one and tap zoom; ☰ opens the same panel as a sheet, and a press on the scene closes it.
 One finger pans, two fingers pinch-zoom. Fit-to-view keeps the scene clear of
 the controls, using whichever free area shows it larger: above the thumb
 clusters (portrait) or between them (landscape, tablets). Supported from

@@ -123,7 +123,7 @@ describe('Camera', () => {
     it('two fingers moving together pan without zooming', () => {
       const c = cam();
       const under = c.screenToWorld(300, 300);
-      c.pinchCss({ x: 250, y: 300 }, { x: 350, y: 300 }, { x: 290, y: 320 }, { x: 390, y: 340 - 20 });
+      c.pinchCss({ x: 250, y: 300 }, { x: 350, y: 300 }, { x: 290, y: 320 }, { x: 390, y: 320 });
       expect(c.ppm).toBeCloseTo(100, 9);
       const moved = c.worldToCss(under);
       expect(moved.x).toBeCloseTo(340, 9);
