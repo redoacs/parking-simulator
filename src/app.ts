@@ -109,6 +109,7 @@ export class App {
   setMirrors(on: boolean): void {
     this.mirrors = on;
     this.renderer.rebuildEnvelope(this.allFootprints());
+    this.updateClearance();
   }
 
   setTimeScale(x: number): void {
@@ -217,21 +218,21 @@ export class App {
 
   private simulate(dt: number): void {
     this.accumulator += dt;
-    let steps = 0;
     while (this.accumulator >= SIM_DT) {
       const u = this.input.control(this.state, this.simParams);
       const next = stepVehicle(this.state, u, this.simParams, SIM_DT);
       const moved = next.x !== this.state.x || next.y !== this.state.y || next.theta !== this.state.theta;
+      const changed = moved || next.steer !== this.state.steer;
       this.state = next;
       this.simTime += SIM_DT;
+      // Pauses advance the clock but do not consume rewind capacity. Timestamps restore the clock across those gaps.
+      if (changed) this.history.push(next, this.simTime);
       if (moved) {
-        this.history.push(next);
         this.pendingFootprints.push(...this.footprints(next));
       }
+      this.updateClearance();
       this.accumulator -= SIM_DT;
-      steps++;
     }
-    if (steps > 0) this.updateClearance();
   }
 
   private rewind(frameDt: number): void {
@@ -242,9 +243,10 @@ export class App {
       // After eviction the state before the oldest one is gone: stop on it rather than fall back to the start pose.
       if (this.history.evicted > 0 && this.history.length === 1) break;
       if (this.history.pop() === undefined) break;
-      this.simTime = Math.max(0, this.simTime - SIM_DT);
     }
-    this.state = { ...(this.history.last() ?? this.scene.start), speed: 0 };
+    const last = this.history.last();
+    this.simTime = last?.time ?? 0;
+    this.state = { ...(last?.state ?? this.scene.start), speed: 0 };
     if (this.firstContactPosition !== null && this.history.evicted + this.history.length < this.firstContactPosition) {
       this.firstContactTime = null;
       this.firstContactPosition = null;
@@ -259,7 +261,12 @@ export class App {
 
   private allFootprints(): Polygon[] {
     const out: Polygon[] = [];
-    this.history.forEach((s) => out.push(...this.footprints(s)));
+    let previous = this.scene.start;
+    this.history.forEach(({ state }) => {
+      // Steering at rest belongs in rewind history, but it adds no body/mirror coverage.
+      if (state.x !== previous.x || state.y !== previous.y || state.theta !== previous.theta) out.push(...this.footprints(state));
+      previous = state;
+    });
     return out;
   }
 

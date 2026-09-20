@@ -159,3 +159,70 @@ test('panel: cross-param corrections are shown, empty input keeps its value, zoo
   await page.waitForTimeout(200);
   expect((await stage.screenshot()).equals(before)).toBe(true);
 });
+
+test('held controls keep independent sources and support Enter, Space stop, and focus release', async ({ page }) => {
+  await page.goto('/#p=garage');
+  await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden);
+  await expect(page.locator('#fatal')).toBeHidden();
+  await expect(page.getByRole('combobox', { name: 'Scenario preset' })).toBeVisible();
+  const settle = async (): Promise<void> => {
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  };
+  const speed = (): Promise<number> => page.evaluate(() => window.__sim!.snapshot().state.speed);
+  await page.keyboard.down('ArrowUp');
+  await page.keyboard.down('w');
+  await page.keyboard.up('w');
+  await settle();
+  expect(await speed()).toBe(2);
+
+  const forward = page.getByRole('button', { name: 'Forward', exact: true });
+  const box = (await forward.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.keyboard.up('ArrowUp');
+  await settle();
+  expect(await speed()).toBe(2); // the pointer remains held after the keyboard source releases
+  await page.mouse.up();
+  await settle();
+  expect(await speed()).toBe(0);
+
+  await forward.focus();
+  await page.keyboard.down('Enter');
+  await settle();
+  expect(await speed()).toBe(2);
+  await page.keyboard.down('Space');
+  await settle();
+  expect(await speed()).toBe(0);
+  await page.keyboard.up('Space');
+  await settle();
+  expect(await speed()).toBe(2);
+  await page.keyboard.press('Tab');
+  await settle();
+  expect(await speed()).toBe(0); // focus loss releases Enter even before its keyup
+  await page.keyboard.up('Enter');
+
+  await page.keyboard.down('ArrowUp');
+  await settle();
+  expect(await speed()).toBe(2);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await settle();
+  expect(await speed()).toBe(0);
+  await page.keyboard.up('ArrowUp');
+});
+
+test('parked with mirror contact stays red; borrowed vehicle data carries its uncertainty', async ({ page }) => {
+  await page.goto('/#p=garage');
+  await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden);
+  await expect(page.locator('#fatal')).toBeHidden();
+  // Fixture placement via the existing debug snapshot: body fits inside the garage, left mirror intersects its wall.
+  await page.evaluate(() => Object.assign(window.__sim!.snapshot().state, { x: 0.94, y: 1.5, theta: Math.PI / 2, steer: 0, speed: 0 }));
+  await expect(page.locator('#hud .band-bad').filter({ hasText: 'PARKED · CONTACT' })).toBeVisible();
+  const parked = page.locator('#panel .readout', { hasText: /^Parked/ });
+  await expect(parked.locator('.value')).toHaveClass('value band-bad');
+  await expect(parked).toContainText('left'); // contact must not hide the useful final offsets
+  for (const name of ['Track front', 'Track rear', 'Turning circle']) {
+    const row = page.locator('#panel .readout', { hasText: name });
+    await expect(row.locator('.unverified')).toHaveText('unverified');
+    await expect(row.locator('a.source')).toHaveAttribute('title', /applicability to MX 2025 not confirmed/);
+  }
+});

@@ -6,13 +6,18 @@ import { defaultParams, getPreset } from './scene/presets';
 import taos from './vehicle/data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './vehicle/validate';
 import { deriveVehicle } from './vehicle/derive';
+import { SIM_DT, type VehicleState } from './sim/model';
 
 const vehicle = deriveVehicle(validateVehicleSpec(taos));
 
 /** App with the GPU and DOM stubbed out; `frames(n, hz)` runs n animation frames at a fixed refresh rate. */
-function harness(historySeconds?: number): {
+function harness(
+  historySeconds?: number,
+  start?: VehicleState,
+): {
   app: App;
   camera: Camera;
+  rebuildEnvelope: ReturnType<typeof vi.fn>;
   frames(n: number, hz?: number): void;
   until(done: () => boolean): void;
 } {
@@ -40,16 +45,21 @@ function harness(historySeconds?: number): {
     resize: () => undefined,
     frame: () => undefined,
     resetEnvelope: () => undefined,
-    rebuildEnvelope: () => undefined,
+    rebuildEnvelope: vi.fn(),
   };
   const canvas = { addEventListener: () => undefined, getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }) };
   const app = new App(canvas as unknown as HTMLCanvasElement, renderer as unknown as Renderer, vehicle, historySeconds);
   const garage = getPreset('garage')!;
+  if (start) {
+    const build = garage.build.bind(garage);
+    vi.spyOn(garage, 'build').mockImplementation((params) => ({ ...build(params), start }));
+  }
   app.setPreset(garage.id, defaultParams(garage)); // starts on the driveway facing the back wall
   app.start();
   return {
     app,
     camera,
+    rebuildEnvelope: renderer.rebuildEnvelope,
     frames(n, hz = 60) {
       for (let i = 0; i < n; i++) {
         now += 1000 / hz;
@@ -70,6 +80,71 @@ afterEach(() => {
 });
 
 describe('App rewind', () => {
+  it('rebuilds the envelope once on release and skips repeated poses from stationary steering', () => {
+    const h = harness();
+    h.app.input.setKey('forward', true);
+    h.frames(30);
+    h.app.input.setKey('forward', false);
+    const moved = h.app.snapshot().historyLength;
+    h.app.input.setKey('left', true);
+    h.frames(30);
+    h.app.input.setKey('left', false);
+    h.app.input.setKey('rewind', true);
+    h.frames(5);
+    expect(h.rebuildEnvelope).not.toHaveBeenCalled();
+    h.app.input.setKey('rewind', false);
+    h.frames(1);
+    expect(h.rebuildEnvelope).toHaveBeenCalledTimes(1);
+    expect(h.rebuildEnvelope.mock.calls[0]![0]).toHaveLength(moved * 3); // body and two mirrors per moving pose
+  });
+  it('rewinds elapsed pauses as well as movement and returns the clock to zero', () => {
+    const h = harness();
+    const start = h.app.snapshot().state;
+    h.app.input.setKey('forward', true);
+    h.frames(60);
+    h.app.input.setKey('forward', false);
+    h.frames(120);
+    h.app.input.setKey('rewind', true);
+    h.frames(2 * 60);
+    expect(h.app.snapshot().historyLength).toBe(0);
+    expect(h.app.snapshot().state).toEqual(start);
+    expect(h.app.snapshot().simTime).toBe(0);
+  });
+
+  it('rewinds stationary steering through its intermediate angles', () => {
+    const h = harness();
+    h.app.input.setKey('left', true);
+    h.frames(30);
+    h.app.input.setKey('left', false);
+    const before = h.app.snapshot();
+    h.app.input.setKey('rewind', true);
+    h.frames(5);
+    const after = h.app.snapshot();
+    expect(after.state.x).toBe(before.state.x);
+    expect(after.state.y).toBe(before.state.y);
+    expect(after.state.steer).toBeGreaterThan(0);
+    expect(after.state.steer).toBeLessThan(before.state.steer);
+    expect(before.simTime - after.simTime).toBeCloseTo((before.historyLength - after.historyLength) * SIM_DT, 12);
+  });
+
+  it('skips idle gaps without evicting the preceding activity', () => {
+    const h = harness(2);
+    h.app.input.setKey('forward', true);
+    h.frames(30);
+    h.app.input.setKey('forward', false);
+    const beforePause = h.app.snapshot();
+    h.frames(5 * 60);
+    expect(h.app.snapshot().historyLength).toBe(beforePause.historyLength);
+    h.app.input.setKey('forward', true);
+    h.frames(30);
+    h.app.input.setKey('forward', false);
+    h.app.input.setKey('rewind', true);
+    h.until(() => h.app.snapshot().historyLength <= beforePause.historyLength);
+    const after = h.app.snapshot();
+    expect(after.simTime).toBeCloseTo(beforePause.simTime - (beforePause.historyLength - after.historyLength) * SIM_DT, 12);
+    expect(after.state.y).toBeLessThanOrEqual(beforePause.state.y);
+  });
+
   it.each([60, 90, 144, 240])('pops history at 2x real time on a %i Hz display', (hz) => {
     const h = harness();
     h.app.input.setKey('forward', true);
@@ -132,6 +207,32 @@ describe('App rewind', () => {
     h.frames(5 * 60);
     expect(h.app.snapshot().historyLength).toBe(0);
     expect(h.app.snapshot().state).toEqual(start);
+  });
+});
+
+describe('App contact timing', () => {
+  it('records a brief contact between two clear render-frame endpoints', () => {
+    // A bounded arc past a real driveway kerb: the body/mirror union is clear at both endpoints,
+    // but the intervening fixed steps overlap. This is a fixture pose, not a recorded drive from the preset start.
+    const h = harness(undefined, {
+      x: 2.714578051585704,
+      y: -6.996801107865759,
+      theta: 0.7561329143937879,
+      steer: 0.5962563737537455,
+      speed: 0,
+    });
+    expect(h.app.snapshot().contact).toBe(false);
+    h.app.input.setKey('forward', true);
+    h.frames(1, 10);
+    expect(h.app.snapshot().contact).toBe(false);
+    expect(h.app.snapshot().firstContactTime).toBeCloseTo(SIM_DT, 12);
+  });
+
+  it.each([10, 30, 60, 120])('records the same first-contact step at %i rendered frames per second', (hz) => {
+    const h = harness();
+    h.app.input.setKey('forward', true);
+    h.frames(6 * hz, hz);
+    expect(h.app.snapshot().firstContactTime).toBeCloseTo(5.275, 9);
   });
 });
 

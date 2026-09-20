@@ -32,13 +32,20 @@ export function keyFromEvent(e: KeyEventLike): DriveKey | undefined {
 }
 
 export class DriveInput {
-  private readonly down = new Set<DriveKey>();
+  private readonly down = new Map<DriveKey, Set<string | symbol>>();
   private resetPending = false;
   private fitPending = false;
 
-  setKey(key: DriveKey, isDown: boolean): void {
-    if (isDown) this.down.add(key);
-    else this.down.delete(key);
+  setKey(key: DriveKey, isDown: boolean, source: string | symbol = 'programmatic'): void {
+    if (isDown) {
+      const sources = this.down.get(key) ?? new Set<string | symbol>();
+      sources.add(source);
+      this.down.set(key, sources);
+    } else {
+      const sources = this.down.get(key);
+      sources?.delete(source);
+      if (sources?.size === 0) this.down.delete(key);
+    }
     if (isDown && key === 'reset') this.resetPending = true;
     if (isDown && key === 'fit') this.fitPending = true;
   }
@@ -47,7 +54,7 @@ export class DriveInput {
   handleKey(code: string, isDown: boolean): boolean {
     const key = KEYMAP[code];
     if (!key) return false;
-    this.setKey(key, isDown);
+    this.setKey(key, isDown, `keyboard:${code}`);
     return true;
   }
 
@@ -57,7 +64,7 @@ export class DriveInput {
       const key = keyFromEvent(e);
       if (!key) return;
       e.preventDefault();
-      if (!e.repeat) this.setKey(key, true);
+      if (!e.repeat) this.handleKey(e.code, true);
     });
     target.addEventListener('keyup', (e) => {
       // Not gated by modifiers: the keydown may predate the modifier, and a skipped keyup leaves the key stuck down.
@@ -68,15 +75,28 @@ export class DriveInput {
 
   /** Press-and-hold semantics for on-screen buttons. */
   bind(button: HTMLElement, key: DriveKey): void {
-    const downH = (e: Event): void => {
+    const downH = (e: PointerEvent): void => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
       e.preventDefault();
-      this.setKey(key, true);
+      this.setKey(key, true, `pointer:${e.pointerId}`);
     };
-    const upH = (): void => this.setKey(key, false);
+    const upH = (e: PointerEvent): void => this.setKey(key, false, `pointer:${e.pointerId}`);
     button.addEventListener('pointerdown', downH);
     button.addEventListener('pointerup', upH);
     button.addEventListener('pointerleave', upH);
     button.addEventListener('pointercancel', upH);
+    const enter = Symbol('button-enter');
+    button.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      if (!e.repeat) this.setKey(key, true, enter);
+    });
+    button.addEventListener('keyup', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      this.setKey(key, false, enter);
+    });
+    button.addEventListener('blur', () => this.setKey(key, false, enter));
   }
 
   get rewindHeld(): boolean {

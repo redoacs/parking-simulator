@@ -16,7 +16,7 @@
     "source": {
       "url": "https://www.vw.com.mx/idhub/content/dam/onehub_pkw/importers/mx/fichas-tecnicas/producto/2025/taos/volkswagen-nuevo-taos-2025-ficha-tecnica.pdf",
       "accessed": "2026-09-18",
-      "note": "Ancho (mm) 1841; VW USA sheet states width excludes mirrors"
+      "note": "unverified: MX sheet lists Ancho (mm) 1841; used as body width, but the sheet does not specify mirror inclusion"
     }
   },
   "widthMirrors": {
@@ -24,7 +24,7 @@
     "source": {
       "url": "https://www.elkgrovevw.com/2025-volkswagen-taos-dimensions/",
       "accessed": "2026-09-18",
-      "note": "unverified: dealer-quoted 82.6 in incl. mirrors; not published by VW"
+      "note": "unverified: dealer-quoted 82.6 in incl. mirrors; not verified for MX 2025"
     }
   },
   "height": {
@@ -63,24 +63,27 @@
     "value": 1.572,
     "source": {
       "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf",
-      "accessed": "2026-09-18",
-      "note": "VW USA 2024 Taos 1.5T FWD: Front Track 61.9 in / 1572 mm (same body: wb 2689, width 1841, 215/55 R17)"
+      "accessed": "2026-09-20",
+      "note": "unverified: applicability to MX 2025 not confirmed; VW USA 2024 Taos 1.5T FWD: Front Track 61.9 in / 1572 mm (wheelbase 2689 mm, width 1841 mm, 215/55 R17)"
     }
   },
   "trackRear": {
     "value": 1.537,
     "source": {
       "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf",
-      "accessed": "2026-09-18",
-      "note": "VW USA 2024 Taos 1.5T FWD: Rear Track 60.5 in / 1537 mm"
+      "accessed": "2026-09-20",
+      "note": "unverified: applicability to MX 2025 not confirmed; VW USA 2024 Taos 1.5T FWD: Rear Track 60.5 in / 1537 mm"
     }
   },
   "turningCircle": {
-    "value": { "diameter": 10.7, "kind": "kerb" },
+    "value": {
+      "diameter": 10.7,
+      "kind": "kerb"
+    },
     "source": {
       "url": "https://media.vw.com/assets/documents/original/17285-2024TaosTechnicalSpecsFINAL.pdf",
-      "accessed": "2026-09-18",
-      "note": "VW USA 2024 Taos 1.5T FWD: Turning Circle (curb to curb) 35.1 ft / 10.70 m; 2.69 turns lock-to-lock"
+      "accessed": "2026-09-20",
+      "note": "unverified: applicability to MX 2025 not confirmed; VW USA 2024 Taos 1.5T FWD: Turning Circle (curb to curb) 35.1 ft / 10.70 m; 2.69 turns lock-to-lock"
     }
   },
   "tireWidth": {

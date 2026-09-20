@@ -74,8 +74,10 @@ interface VehicleSpec {
 }
 ```
 
-A field that cannot be sourced from an official document is marked
-`note: "unverified"` and shown as such in the UI. `length` must equal
+A field that cannot be sourced from an official document for this vehicle is marked
+`note: "unverified…"` and shown as such in the UI, including the track widths and
+turning circle borrowed from the 2024 US model and the interpretation of the
+MX sheet's width as excluding mirrors. `length` must equal
 `wheelbase + frontOverhang + rearOverhang` within 0.01 m or validation fails.
 
 Derived at load (`vehicle/derive.ts`): max steer angle `δmax` from the
@@ -130,9 +132,12 @@ was on the car's right on its right. The view does not rotate afterwards.
   to ±2 m/s. A time-scale slider (0.1×–1×) scales `dt` for fine control.
 - Keyboard: `↑/W` forward, `↓/S` reverse, `←/A` `→/D` steer, `Space` stop,
   `R` reset, `Z` rewind (hold). On-screen buttons mirror these for touch.
-- History: ring buffer of `VehicleState` per step (capacity 5 min at 120 Hz).
-  Rewind pops states and marks the envelope for rebuild from history. Reset
-  clears history and the envelope and returns to `scene.start`.
+- History: timestamped movement and steering changes (capacity 36,000 active steps,
+  five minutes at 120 Hz). Idle pauses advance sim time without consuming history.
+  Rewind pops active steps at 2× real time, restores their timestamps, skips idle
+  gaps, and stops the vehicle. It cannot pass the oldest retained state after eviction.
+  The pre-rewind envelope stays visible while held and is rebuilt once on release.
+  Reset clears history and the envelope and returns to `scene.start`.
 
 ## 4. Geometry & clearance
 
@@ -148,7 +153,9 @@ was on the car's right on its right. The view does not rotate afterwards.
 - **Collision**: min distance ≤ 0. Drive continues; state flagged; the history
   index is recorded so the UI can show "first contact at t = …".
 - **Parked**: body polygon fully inside `target` and `speed = 0`. Readouts then
-  show lateral offset from the kerb/side line and heading error.
+  show lateral offset from the kerb/side line and heading error. If mirrors still
+  contact an obstacle, the UI shows `PARKED · CONTACT` in red; green parked styling
+  requires no contact. This does not change the body-only containment definition.
 - Turning guides at current `δ`: instantaneous centre of rotation
   `ICR = rear-axle centre + R·n̂` with `R = L / tanδ`; circles for the inner
   rear wheel (smallest), outer front wheel, and outer front body corner
@@ -162,8 +169,9 @@ WebGL2 (since v1.2). One context, one canvas, per frame:
    `scene.bounds` at 5 mm/px (a 30 m × 20 m scene = 6000 × 4000 px = 24 MB;
    bounded by presets). Each frame draws the footprints for the steps
    simulated since the previous frame with `max` blending. Never cleared until
-   reset/rewind. On rewind the texture is cleared and rebuilt from history in
-   one pass.
+   reset/rewind. When rewind is released the texture is cleared and rebuilt from retained
+   history in one pass; the pre-rewind sweep stays visible while rewind is held.
+   Stationary steering entries add no duplicate footprints to the rebuild.
 2. **Scene pass** — procedural grid (fullscreen triangle, line at 0.1 m minor
    / 1 m major, fading with zoom), obstacles as instanced triangulated
    polygons (ear-clipping at scene build; one vertex buffer, per-instance
@@ -192,7 +200,7 @@ Plain HTML/CSS/TS, no framework. Left panel:
   badge where applicable, mirrors toggle.
 - Readouts: min clearance in cm (green ≥ 30, amber 10–30, red < 10, "CONTACT"
   ≤ 0 with the obstacle kind), steer angle (°), speed (km/h), sim time,
-  time-scale slider, parked status with final offsets.
+  time-scale slider, parked status with final offsets (red when also in contact).
 - Buttons: reset, rewind (hold), fit view, zoom −/+ (touch has no wheel), on-screen drive controls.
 - URL hash encodes `preset` + params + mirrors flag so a scenario is
   shareable; parsed on load, written on change.
@@ -249,8 +257,10 @@ path). Also used during development to verify visually.
 - Scripts: `dev`, `build`, `preview`, `test`, `test:e2e`, `lint`, `typecheck`,
   `format`, `format:check`.
 - GitHub Actions on push to `main` and on PRs: install (frozen lockfile),
-  typecheck, lint, format check, unit tests, build; on `main` additionally deploy `dist/`
-  to GitHub Pages. Vite `base` = `/parking-simulator/`.
+  typecheck, lint, format check, unit tests, build, and required browser tests; on
+  `main` deploy `dist/` only after both the check and browser jobs pass. Shared
+  smoke runs on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
+  Vite `base` = `/parking-simulator/`.
 - The GitHub repository `redoacs/parking-simulator` (public) is created at the
   deploy step, not before.
 
@@ -262,8 +272,9 @@ persistence beyond the URL hash, GPU text.
 
 ## Open items to resolve during implementation
 
-- Which turning-circle variant (kerb or wall) VW Mexico quotes for the 2025
-  Taos; the derivation branches on it.
+- Confirm the 2025 MX track widths and turning circle; the cited MX sheet does
+  not list them. The current 2024 US proxy uses kerb-to-kerb and is unverified
+  for the MX vehicle.
 - Exact mirror geometry (width contribution and fore/aft position) — likely
   approximate from `widthMirrors − widthBody` and a typical A-pillar position;
   will be marked `unverified`.

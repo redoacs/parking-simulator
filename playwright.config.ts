@@ -19,5 +19,10 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 120_000,
   },
-  projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    // The phone gesture suite uses Chromium's CDP touch/rotation emulation. Shared smoke tests run on all engines.
+    { name: 'firefox', testMatch: '**/smoke.spec.ts', use: { browserName: 'firefox' } },
+    { name: 'webkit', testMatch: '**/smoke.spec.ts', use: { browserName: 'webkit' } },
+  ],
 });
