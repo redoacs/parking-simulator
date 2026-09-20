@@ -16,7 +16,7 @@ Peer runtime evidence was taken on trust, even when a reviewer read the log.
 | Item | Resolution | Implementation / verification |
 | --- | --- | --- |
 | 1. Contact missed between rendered frames | Check clearance after every fixed simulation step; first contact names that step. | `src/app.ts`, `src/app.test.ts`: brief-contact fixture and 10/30/60/120 Hz timing. |
-| 2. Idle time and stationary steering lost on rewind | Record timestamped movement/steering changes, restore timestamps and skip idle gaps. Idle does not consume ring capacity. | `src/sim/history.ts`, `src/app.test.ts`: timestamp round-trip, idle gaps, steering and eviction floor. |
+| 2. Idle time and stationary steering lost on rewind | Record timestamped movement/steering changes, restore timestamps and skip idle gaps. Idle does not consume ring capacity. | `src/sim/history.ts`, `src/app.test.ts`: timestamp round-trip, idle gaps, steering; existing eviction-floor tests still pass. |
 | 3. One input release cancels another hold | Track source identities independently and idempotently. | `src/ui/input.ts`, its unit tests and browser held-controls test. |
 | 4. Enter does not operate held buttons; unnamed controls | Enter holds until release/focus loss; name the selector and wide-pad buttons; preserve Space stop. | `src/ui/input.ts`, `panel.ts`, `e2e/smoke.spec.ts`. Physical keyboard support; no screen-reader click-to-hold claim. |
 | 5. Green PARKED during mirror contact | Keep body-only containment; display red `PARKED · CONTACT` and retain offsets. | `src/ui/readouts.ts`, garage-wall browser fixture. |
@@ -48,6 +48,14 @@ fixture's 12-step dependence, say hover notes explicitly, scope the gate claim
 to deployment, and add `CLAUDE.md → AGENTS.md`. The final closeout pass reads
 this whole retrospective and its design evidence; its receipt belongs to PR #8.
 
+The first full closeout pass at `00a6784` returned 0 Blocking, 1 Should-fix and
+5 Optional findings. It found contradictory spec precedence, an ambiguous Linux
+command, unclear attribution of existing eviction tests, excess private-memory
+audit detail, and an empty CI receipt observed during an in-place refresh. The
+display-run precondition was resolved by the completed hosted run. The docs
+were corrected, audit detail kept in the local packet, and a finished receipt
+handed over under a new immutable filename for the confirmation pass.
+
 ## Verification and limits
 
 Local command receipts, preserved outside the reapable worktree:
@@ -74,8 +82,10 @@ MiniBrowser binary's SHA-256 matched the original. CI uses Playwright's standard
 `--with-deps` installation. The first hosted run at `d9504a4` passed 22 browser
 tests but failed five Firefox tests because WebGL2 was unavailable. A controlled
 local probe reproduced WebGL2 success with `DISPLAY` and failure without it.
-The E2E command now runs under `xvfb-run --auto-servernum`; its hosted result
-remains a gate, recorded on PR #8 before shipping. No browser engine was removed and no retry allowance
+The E2E command now runs under `xvfb-run --auto-servernum`. Hosted run
+[35532568839](https://github.com/redoacs/parking-simulator/actions/runs/35532568839)
+at `00a6784` passed all 241 unit and 27 browser tests. Final-head checks remain
+a shipping gate recorded on PR #8. No browser engine was removed and no retry allowance
 was added. The E2E job loads a separate `/` build; the deployed artifact uses
 `/parking-simulator/`. The gate is not an exact-artifact deployment smoke test.
 
@@ -124,19 +134,10 @@ points to those owners and the shared collaboration playbook; `CLAUDE.md` is a
 symlink to that index. No separate architecture document or standing doc-audit
 hook exists; the v1 spec owns architecture.
 
-The memory-hygiene skill resolved the existing private project store, not an
-in-repo store. Its four index links resolve with no orphan files. Two existing
-index lines exceed the skill's 200-character threshold (215 and 228 characters).
-No specified self-staleness marker was found; broader matches described domain
-states, not a memory declaring itself obsolete. A live-source audit nevertheless
-found stale advisory-CI, idle-rewind, Enter and source-publication claims in
-`repo-and-deploy.md`, `v1-deferred-minors.md`, and `vw-spec-sources.md`.
-Private-memory edits were not authorized by a direct memory-update request, so
-those files remain untouched. Current decisions are published in this PR's docs.
-No promotion markers, new/substantially edited memory files, or index-polarity
-fixes required action. Consolidation was inapplicable; the structural-pattern
-catalog was absent. These are explicit skips, not passed heuristic checks.
-Codex skips the Claude-only creative corner.
+Memory hygiene found stale private notes about advisory CI, idle rewind, Enter
+and source publication. They remain untouched because private-memory edits need
+a direct update request. Current decisions are published in this PR's docs;
+the detailed audit is preserved locally. No promotion markers required action.
 
 ## Reflections and next priority
 

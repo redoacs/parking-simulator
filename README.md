@@ -15,7 +15,7 @@ pnpm install
 pnpm dev          # http://localhost:5173
 pnpm test         # unit tests (Vitest)
 pnpm exec playwright install --with-deps chromium firefox webkit  # browser test runtimes; Linux dependencies need admin access
-# On display-less Linux, prefix the browser command with xvfb-run --auto-servernum.
+# On display-less Linux, run xvfb-run --auto-servernum pnpm test:e2e.
 pnpm test:e2e     # Chromium phone tests + Chromium/Firefox/WebKit smoke; builds and serves on port 4173,
                   # and fails if that port is busy. Another port: E2E_PORT=4174 pnpm test:e2e
 pnpm build        # typecheck + production build in dist/
