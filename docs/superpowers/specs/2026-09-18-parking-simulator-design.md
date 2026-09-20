@@ -265,7 +265,8 @@ path). Also used during development to verify visually.
   typecheck, lint, format check, unit tests, build, and required browser tests; on
   `main` deploy `dist/` only after both the check and browser jobs pass. Shared
   smoke runs on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
-  Vite `base` = `/parking-simulator/`.
+  The deployment build sets `BASE_PATH=/parking-simulator/`; Vite defaults to `/`
+  when that environment variable is absent.
 - Repository: `redoacs/parking-simulator`; publication uses GitHub Pages.
 
 ## 10. Out of scope (v1)

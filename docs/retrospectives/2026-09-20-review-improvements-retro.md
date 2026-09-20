@@ -54,7 +54,10 @@ command, unclear attribution of existing eviction tests, excess private-memory
 audit detail, and an empty CI receipt observed during an in-place refresh. The
 display-run precondition was resolved by the completed hosted run. The docs
 were corrected, audit detail kept in the local packet, and a finished receipt
-handed over under a new immutable filename for the confirmation pass.
+handed over under a new immutable filename for the confirmation pass. That pass
+at `191d3e3` approved with 0 Blocking, 0 Should-fix and 1 Optional finding: it
+noticed the pre-existing shorthand for Vite's base path. The spec now names
+`BASE_PATH` and the local `/` default explicitly.
 
 ## Verification and limits
 
