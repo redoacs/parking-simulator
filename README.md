@@ -43,7 +43,7 @@ both to reverse while steering. One finger pans, two fingers pinch-zoom, ☰ ope
 Every dimension in `src/vehicle/data/*.json` carries its source URL. The body-width
 interpretation, estimated overhangs, and mirror geometry are marked `unverified`. Track widths and turning
 circle come from VW's 2024 US Taos sheet; their applicability to the 2025 MX
-vehicle is also marked `unverified`. The source links expose notes for every
+vehicle is also marked `unverified`. Hover notes on the source links explain each
 dimension, including the turning circle. These assumptions affect the clearances
 and maneuvers the simulator reports.
 

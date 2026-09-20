@@ -214,7 +214,8 @@ test('parked with mirror contact stays red; borrowed vehicle data carries its un
   await page.goto('/#p=garage');
   await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden);
   await expect(page.locator('#fatal')).toBeHidden();
-  // Fixture placement via the existing debug snapshot: body fits inside the garage, left mirror intersects its wall.
+  // Test-only placement relies on snapshot().state aliasing App state: body fits, left mirror intersects the garage wall.
+  // A future defensive snapshot copy must replace this fixture; the assertion below would fail, not silently pass.
   await page.evaluate(() => Object.assign(window.__sim!.snapshot().state, { x: 0.94, y: 1.5, theta: Math.PI / 2, steer: 0, speed: 0 }));
   await expect(page.locator('#hud .band-bad').filter({ hasText: 'PARKED · CONTACT' })).toBeVisible();
   const parked = page.locator('#panel .readout', { hasText: /^Parked/ });

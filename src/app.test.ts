@@ -213,7 +213,8 @@ describe('App rewind', () => {
 describe('App contact timing', () => {
   it('records a brief contact between two clear render-frame endpoints', () => {
     // A bounded arc past a real driveway kerb: the body/mirror union is clear at both endpoints,
-    // but the intervening fixed steps overlap. This is a fixture pose, not a recorded drive from the preset start.
+    // but the intervening fixed steps overlap. This fixture relies on 12 fixed steps in the clamped 0.1 s frame.
+    // It is a fixture pose, not a recorded drive from the preset start.
     const h = harness(undefined, {
       x: 2.714578051585704,
       y: -6.996801107865759,
