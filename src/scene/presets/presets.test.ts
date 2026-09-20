@@ -24,6 +24,8 @@ function paramGrid(def: (typeof PRESETS)[number]): Record<string, number>[] {
 describe.each(PRESETS.map((p) => [p.id, p] as const))('preset %s', (_id, def) => {
   it.each(paramGrid(def).map((p, i) => [i, p] as const))('is valid for param set %i', (_i, params) => {
     const scene = def.build(params);
+    // Since v1.2 every scene starts with the car pointing up the screen, so up/down match forward/reverse.
+    expect(scene.start.theta).toBeCloseTo(Math.PI / 2, 12);
     expect(isConvex(scene.target)).toBe(true);
     for (const o of scene.obstacles) {
       expect(isConvex(o.polygon)).toBe(true);
@@ -48,15 +50,6 @@ describe.each(PRESETS.map((p) => [p.id, p] as const))('preset %s', (_id, def) =>
     expect(all.maxX).toBeLessThanOrEqual(scene.bounds.maxX);
     expect(all.maxY).toBeLessThanOrEqual(scene.bounds.maxY);
   });
-});
-
-describe('orientation (v1.2)', () => {
-  it.each(PRESETS.flatMap((def) => paramGrid(def).map((params, i) => [def.id, i, def, params] as const)))(
-    '%s param set %i starts with the car pointing up the screen',
-    (_id, _i, def, params) => {
-      expect(def.build(params).start.theta).toBeCloseTo(Math.PI / 2, 12);
-    },
-  );
 });
 
 describe('registry', () => {
@@ -95,8 +88,12 @@ describe('v1.1 preset fixes', () => {
     const scene = def.build({ ...defaultParams(def), bayDepth: 4.5 });
     const cars = scene.obstacles.filter((o) => o.kind === 'car');
     expect(cars).toHaveLength(2);
-    // The scene is rotated so the aisle lies on the -x side of the bay: the bay line is the target's minX edge.
-    expect(boundsOf(cars.map((c) => c.polygon)).minX).toBeGreaterThanOrEqual(boundsOf([scene.target]).minX);
+    // The bay line is one end of the target's depth, which end depending on which way the scene was turned, so require
+    // the neighbours to stay within the target's depth at both ends.
+    const carDepth = boundsOf(cars.map((c) => c.polygon));
+    const bay = boundsOf([scene.target]);
+    expect(carDepth.minX).toBeGreaterThanOrEqual(bay.minX);
+    expect(carDepth.maxX).toBeLessThanOrEqual(bay.maxX);
   });
   it('garage: clampParams reports the door and driveway widths the scene is built with', () => {
     const def = getPreset('garage')!;

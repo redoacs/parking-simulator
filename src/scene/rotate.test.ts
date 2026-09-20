@@ -46,7 +46,7 @@ describe('rotateScene', () => {
     expect(r.bounds).toEqual({ minX: -6, minY: -2, maxX: 1, maxY: 10 });
   });
 
-  it('four quarter turns are the identity, and zero turns returns the same geometry', () => {
+  it('four quarter turns are the identity, and a turn each way cancels out', () => {
     let r = scene;
     for (let i = 0; i < 4; i++) r = rotateScene(r, 1);
     expect(r.target).toEqual(scene.target);
@@ -55,6 +55,9 @@ describe('rotateScene', () => {
     expect(r.start.x).toBe(scene.start.x);
     expect(r.start.y).toBe(scene.start.y);
     expect(Math.cos(r.start.theta)).toBeCloseTo(1, 12);
-    expect(rotateScene(scene, 0).target).toEqual(scene.target);
+    const back = rotateScene(rotateScene(scene, 1), -1);
+    expect(back.target).toEqual(scene.target);
+    expect(back.bounds).toEqual(scene.bounds);
+    expect(back.start.theta).toBe(scene.start.theta);
   });
 });
