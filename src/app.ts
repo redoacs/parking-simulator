@@ -247,7 +247,11 @@ export class App {
     const last = this.history.last();
     this.simTime = last?.time ?? 0;
     this.state = { ...(last?.state ?? this.scene.start), speed: 0 };
-    if (this.firstContactPosition !== null && this.history.evicted + this.history.length < this.firstContactPosition) {
+    if (
+      this.firstContactPosition !== null &&
+      (this.history.evicted + this.history.length < this.firstContactPosition ||
+        (this.firstContactTime !== null && this.firstContactTime > this.simTime))
+    ) {
       this.firstContactTime = null;
       this.firstContactPosition = null;
     }

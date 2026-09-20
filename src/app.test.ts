@@ -80,6 +80,22 @@ afterEach(() => {
 });
 
 describe('App rewind', () => {
+  it('does not retain a future contact time when rewind skips an idle mirror toggle', () => {
+    const h = harness(undefined, { x: 0.94, y: 1.5, theta: Math.PI / 2, steer: 0, speed: 0 });
+    h.app.setMirrors(false);
+    h.app.reset();
+    h.frames(120);
+    expect(h.app.snapshot().firstContactTime).toBeNull();
+    h.app.setMirrors(true);
+    expect(h.app.snapshot().firstContactTime).toBeGreaterThan(1);
+    h.app.input.setKey('rewind', true);
+    h.frames(1);
+    const after = h.app.snapshot();
+    expect(after.simTime).toBe(0);
+    expect(after.contact).toBe(true);
+    expect(after.firstContactTime).toBe(0);
+  });
+
   it('rebuilds the envelope once on release and skips repeated poses from stationary steering', () => {
     const h = harness();
     h.app.input.setKey('forward', true);

@@ -208,9 +208,18 @@ test('held controls keep independent sources and support Enter, Space stop, and 
   await settle();
   expect(await speed()).toBe(0);
   await page.keyboard.up('ArrowUp');
+
+  await forward.focus();
+  await page.keyboard.down('Enter');
+  await settle();
+  expect(await speed()).toBe(2);
+  await page.setViewportSize({ width: 800, height: 600 });
+  await expect(page.locator('#panel .wide-only')).toBeHidden();
+  await page.keyboard.up('Enter');
+  await expect.poll(speed).toBe(0); // a layout change must not strand the Enter source
 });
 
-test('parked with mirror contact stays red; borrowed vehicle data carries its uncertainty', async ({ page }) => {
+test('parked with mirror contact stays red and keeps final offsets', async ({ page }) => {
   await page.goto('/#p=garage');
   await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden);
   await expect(page.locator('#fatal')).toBeHidden();
@@ -221,6 +230,11 @@ test('parked with mirror contact stays red; borrowed vehicle data carries its un
   const parked = page.locator('#panel .readout', { hasText: /^Parked/ });
   await expect(parked.locator('.value')).toHaveClass('value band-bad');
   await expect(parked).toContainText('left'); // contact must not hide the useful final offsets
+});
+
+test('borrowed vehicle data carries its uncertainty', async ({ page }) => {
+  await page.goto('/#p=garage');
+  await expect(page.locator('#panel')).toBeVisible();
   for (const name of ['Track front', 'Track rear', 'Turning circle']) {
     const row = page.locator('#panel .readout', { hasText: name });
     await expect(row.locator('.unverified')).toHaveText('unverified');

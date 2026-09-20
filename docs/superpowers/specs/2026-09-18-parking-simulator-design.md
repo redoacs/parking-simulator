@@ -244,7 +244,7 @@ clusters (portrait) or between them (landscape, tablets). Supported from
   non-overlapping, non-self-intersecting obstacles and a car start pose that
   is clearance-positive.
 
-**Playwright smoke** (headless Chromium, default software GL): app boots,
+**Playwright smoke** (Chromium, Firefox, WebKit): app boots,
 renderer initialises, a scripted key sequence moves the car, clearance readout
 changes, envelope texture is non-empty (read back one pixel under the car's
 path). Also used during development to verify visually.
