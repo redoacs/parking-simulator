@@ -1,7 +1,7 @@
 # Parking Simulator — Design
 
 Date: 2026-09-18
-Status: approved (brainstorm 2026-09-17/18)
+Status: approved (brainstorm 2026-09-17/18), reconciled with implementation 2026-09-20
 
 ## Purpose
 
@@ -34,12 +34,13 @@ src/
   render/    WebGL2 context, passes, GLSL shaders, camera         (browser)
   ui/        panel, readouts, presets UI, input bindings          (browser)
   scene/     Scene type + parametric preset generators            (pure)
-  main.ts    wiring: input → sim.step → geom.check → render.frame
+  app.ts     fixed-step loop, history, clearance, render coordination
+  main.ts    startup and UI wiring
 ```
 
-Dependencies point downward only: `ui → main ← render`, and everything may
-depend on `geom`/`vehicle`/`scene`/`sim`, which depend on nothing in the
-browser. Pure modules are tested in Node.
+`main.ts` constructs `App`, the renderer, and UI. `App` coordinates input,
+simulation, clearance, and rendering. The geometry, vehicle, scene, and simulation
+modules have no browser dependency and are tested in Node.
 
 `sim` consumes a `ControlInput { steer: number; speed: number }` per step from
 any source. The keyboard is one source; a future planner is another. No planner
@@ -71,6 +72,8 @@ interface VehicleSpec {
   turningCircle: Cited<{ diameter: number; kind: 'kerb' | 'wall' }>;
   tireWidth: Cited<number>;
   wheelDiameter: Cited<number>;
+  mirrorLongitudinal: Cited<number>; // rear axle to mirror centre, m
+  mirrorLength: Cited<number>;
 }
 ```
 
@@ -126,8 +129,9 @@ was on the car's right on its right. The view does not rotate afterwards.
 ## 3. Simulation
 
 - Fixed step `dt = 1/120 s` via an accumulator in `requestAnimationFrame`.
-- Kinematic bicycle model at the rear axle:
-  `x += v·cosθ·dt; y += v·sinθ·dt; θ += (v / L)·tanδ·dt`.
+- Kinematic bicycle model at the rear axle: `dx/dt = v·cosθ`,
+  `dy/dt = v·sinθ`, `dθ/dt = (v / L)·tanδ`. Each fixed step integrates the
+  exact circular arc for its constant steering angle and speed.
 - Steering rate-limited: full lock-to-lock in 1.5 s (constant). Speed clamped
   to ±2 m/s. A time-scale slider (0.1×–1×) scales `dt` for fine control.
 - Keyboard: `↑/W` forward, `↓/S` reverse, `←/A` `→/D` steer, `Space` stop,
@@ -168,8 +172,8 @@ WebGL2 (since v1.2). One context, one canvas, per frame:
 1. **Envelope accumulation** — offscreen `R8` texture covering
    `scene.bounds` at 5 mm/px (a 30 m × 20 m scene = 6000 × 4000 px = 24 MB;
    bounded by presets). Each frame draws the footprints for the steps
-   simulated since the previous frame with `max` blending. Never cleared until
-   reset/rewind. When rewind is released the texture is cleared and rebuilt from retained
+   simulated since the previous frame with `max` blending. Reset clears it;
+   toggling mirrors rebuilds it for the selected outline. When rewind is released the texture is cleared and rebuilt from retained
    history in one pass; the pre-rewind sweep stays visible while rewind is held.
    Stationary steering entries add no duplicate footprints to the rebuild.
 2. **Scene pass** — procedural grid (fullscreen triangle, line at 0.1 m minor
@@ -177,18 +181,19 @@ WebGL2 (since v1.2). One context, one canvas, per frame:
    polygons (ear-clipping at scene build; one vertex buffer, per-instance
    colour by kind), target spot.
 3. **Overlay pass** — composite envelope texture (tinted, semi-transparent),
-   turning-guide circles (instanced quads with SDF ring shader), clearance
-   ruler (a thick line between closest points), then the car: body, four
-   wheels rotated by steer (front) around their hubs, mirrors.
+   turning-guide circles (instanced quads with SDF ring shader), then the car:
+   body, four wheels rotated by steer (front) around their hubs, mirrors, and
+   the clearance ruler (a thick line between closest points) drawn over the car.
 4. **Text** — HTML, absolutely positioned over the canvas. No GPU text.
 
 Camera: orthographic; drag to pan, wheel to zoom about cursor, "fit" button
 frames `scene.bounds`. Handles `devicePixelRatio` and resize.
 
-`Renderer` interface: `init(canvas)`, `resize()`, `frame(view: FrameInput)`,
-`resetEnvelope()`, `rebuildEnvelope(states)`. `FrameInput` carries the scene
-buffers, car pose, guide circles, ruler, and camera. This is the seam for a
-later 3D backend; v1.2 swapped WebGPU for WebGL2 behind it without touching `App`.
+`Renderer` is a class created by `Renderer.create(canvas)`, with `camera`,
+`resize()`, `frame(FrameInput)`, `resetEnvelope()`, `rebuildEnvelope(polygons)`,
+`readEnvelopeAt()`, and `onContextLost()`. `FrameInput` carries static and dynamic
+polygons, rings, new footprints, bounds, and version counters. `App` derives
+those inputs; the renderer owns GPU resources.
 
 ## 6. UI
 
@@ -261,8 +266,7 @@ path). Also used during development to verify visually.
   `main` deploy `dist/` only after both the check and browser jobs pass. Shared
   smoke runs on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
   Vite `base` = `/parking-simulator/`.
-- The GitHub repository `redoacs/parking-simulator` (public) is created at the
-  deploy step, not before.
+- Repository: `redoacs/parking-simulator`; publication uses GitHub Pages.
 
 ## 10. Out of scope (v1)
 
@@ -270,11 +274,11 @@ Automatic planner, obstacle editor, 3D camera, vehicle
 dynamics (slip, suspension, acceleration curves), multiple vehicles at once,
 persistence beyond the URL hash, GPU text.
 
-## Open items to resolve during implementation
+## Remaining verification
 
 - Confirm the 2025 MX track widths and turning circle; the cited MX sheet does
   not list them. The current 2024 US proxy uses kerb-to-kerb and is unverified
   for the MX vehicle.
-- Exact mirror geometry (width contribution and fore/aft position) — likely
-  approximate from `widthMirrors − widthBody` and a typical A-pillar position;
-  will be marked `unverified`.
+- Confirm whether the cited width excludes mirrors, and the exact mirror geometry
+  (width contribution, length, fore/aft position). Current interpretations and
+  estimates are marked `unverified`.
