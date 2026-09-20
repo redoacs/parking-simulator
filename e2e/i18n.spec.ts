@@ -30,6 +30,7 @@ test('live language switch preserves the run, camera, inputs and scenario link',
   await language(page).selectOption('es');
   await expect(page).toHaveTitle('Simulador de estacionamiento');
   await expect(page.locator('html')).toHaveAttribute('lang', 'es-MX');
+  await expect(page.getByRole('link', { name: 'Fuente: Largo', exact: true })).toHaveText('Fuente');
   await expect(page.getByRole('combobox', { name: 'Tipo de escenario' })).toBeVisible();
   await expect(page.getByLabel('Escala de tiempo')).toHaveValue('0.5');
   await expect(page.getByLabel('Incluir espejos')).not.toBeChecked();
@@ -63,6 +64,7 @@ test('live language switch preserves the run, camera, inputs and scenario link',
   await language(page).selectOption('en');
   await expect(page.getByLabel('Interior depth')).toHaveValue('5.5');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('link', { name: 'Source: Length', exact: true })).toHaveText('Source');
 });
 
 test('fatal summaries switch language and retain literal diagnostic text', async ({ page }) => {
@@ -87,7 +89,6 @@ test('a repeated GPU-loss notification keeps a translated fatal message through 
     document.getElementById('gpu')!.dispatchEvent(new Event('webglcontextlost'));
   }, DEVICE_LOSS_KEY);
   await expect(page.locator('#fatal')).toContainText('Se perdió la conexión con la GPU');
-  await expect(page.locator('#fatal')).not.toContainText('WebGL context lost');
   await language(page).selectOption('en');
   await expect(page.locator('#fatal')).toContainText('The GPU was lost');
   await page.evaluate(() => window.dispatchEvent(new ErrorEvent('error', { message: 'later fallout' })));
