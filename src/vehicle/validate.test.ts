@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import taos from './data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec, VehicleSpecError } from './validate';
-import { dimsOf, isUnverified } from './types';
+import { dimsOf, isUnverified, NUMERIC_FIELDS } from './types';
 
 function clone<T>(x: T): T {
   return JSON.parse(JSON.stringify(x)) as T;
@@ -15,6 +15,33 @@ describe('validateVehicleSpec', () => {
     expect(d.turningCircle).toEqual({ diameter: 10.7, kind: 'kerb' });
     expect(isUnverified(spec.frontOverhang)).toBe(true);
     expect(isUnverified(spec.wheelbase)).toBe(false);
+  });
+
+  it('uses explicit confidence even when note wording changes', () => {
+    const raw = clone(taos);
+    raw.frontOverhang.source.note = 'Una estimación';
+    raw.wheelbase.source.note = 'unverified is a word in this quotation';
+    const spec = validateVehicleSpec(raw);
+    expect(isUnverified(spec.frontOverhang)).toBe(true);
+    expect(isUnverified(spec.wheelbase)).toBe(false);
+    const uncertain = ([...NUMERIC_FIELDS, 'turningCircle'] as const).filter((field) => isUnverified(spec[field])).sort();
+    expect(uncertain).toEqual([
+      'frontOverhang',
+      'mirrorLength',
+      'mirrorLongitudinal',
+      'rearOverhang',
+      'trackFront',
+      'trackRear',
+      'turningCircle',
+      'widthBody',
+      'widthMirrors',
+    ]);
+  });
+
+  it.each([undefined, null, true, 'unknown'])('rejects invalid or missing confidence: %s', (confidence) => {
+    const raw = clone(taos);
+    (raw.length.source as Record<string, unknown>).confidence = confidence;
+    expect(() => validateVehicleSpec(raw)).toThrow(/source.confidence/);
   });
 
   it('rejects a broken length identity', () => {

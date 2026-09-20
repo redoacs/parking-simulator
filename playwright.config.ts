@@ -11,6 +11,7 @@ export default defineConfig({
   timeout: 60_000,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
+    locale: 'en-US',
     baseURL: `http://localhost:${String(port)}`,
   },
   webServer: {
@@ -22,7 +23,7 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
     // The phone gesture suite uses Chromium's CDP touch/rotation emulation. Shared smoke tests run on all engines.
-    { name: 'firefox', testMatch: '**/smoke.spec.ts', use: { browserName: 'firefox' } },
-    { name: 'webkit', testMatch: '**/smoke.spec.ts', use: { browserName: 'webkit' } },
+    { name: 'firefox', testMatch: ['**/smoke.spec.ts', '**/i18n.spec.ts'], use: { browserName: 'firefox' } },
+    { name: 'webkit', testMatch: ['**/smoke.spec.ts', '**/i18n.spec.ts'], use: { browserName: 'webkit' } },
   ],
 });

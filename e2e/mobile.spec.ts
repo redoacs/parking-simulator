@@ -34,7 +34,7 @@ test.describe('phone layout', () => {
 
     await page.getByRole('button', { name: 'Settings' }).tap();
     await expect(panel).toBeInViewport();
-    await expect(page.locator('#panel select')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Scenario preset' })).toBeVisible();
     // The sidebar's own drive pad would duplicate the thumb controls.
     await expect(page.locator('#panel .pad.wide-only')).toBeHidden();
 

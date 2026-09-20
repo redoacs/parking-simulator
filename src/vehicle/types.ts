@@ -2,6 +2,7 @@ export interface Source {
   url: string;
   accessed: string;
   note?: string;
+  confidence: 'verified' | 'unverified';
 }
 
 export interface Cited<T> {
@@ -65,5 +66,5 @@ export function dimsOf(spec: VehicleSpec): VehicleDims {
 }
 
 export function isUnverified(c: Cited<unknown>): boolean {
-  return (c.source.note ?? '').startsWith('unverified');
+  return c.source.confidence === 'unverified';
 }

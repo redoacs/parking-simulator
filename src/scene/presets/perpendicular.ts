@@ -11,12 +11,11 @@ import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } 
  */
 export const perpendicular: PresetDef = {
   id: 'perpendicular',
-  name: 'Perpendicular bay',
   params: [
-    { key: 'bayWidth', label: 'Bay width', unit: 'm', min: 2.3, max: 3.2, step: 0.05, default: 2.5 },
-    { key: 'bayDepth', label: 'Bay depth', unit: 'm', min: 4.5, max: 6.0, step: 0.1, default: 5.0 },
-    { key: 'aisleWidth', label: 'Aisle width', unit: 'm', min: 5.0, max: 8.0, step: 0.1, default: 6.0 },
-    { key: 'neighbours', label: 'Neighbour cars', unit: 'flag', min: 0, max: 1, step: 1, default: 1 },
+    { key: 'bayWidth', unit: 'm', min: 2.3, max: 3.2, step: 0.05, default: 2.5 },
+    { key: 'bayDepth', unit: 'm', min: 4.5, max: 6.0, step: 0.1, default: 5.0 },
+    { key: 'aisleWidth', unit: 'm', min: 5.0, max: 8.0, step: 0.1, default: 6.0 },
+    { key: 'neighbours', unit: 'flag', min: 0, max: 1, step: 1, default: 1 },
   ],
   build(p): Scene {
     const bayWidth = p.bayWidth!;

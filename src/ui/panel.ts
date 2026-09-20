@@ -1,3 +1,6 @@
+import { fmt, getLanguage, selectLanguage, t } from '../i18n';
+import type { MessageKey, Messages } from '../i18n/en';
+import { createTextBindings } from './textBindings';
 import { PRESETS, getPreset, defaultParams, clampParams } from '../scene/presets';
 import type { Params } from '../scene/types';
 import { isUnverified, NUMERIC_FIELDS, type Cited } from '../vehicle/types';
@@ -29,26 +32,61 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
-function citedRow(label: string, c: Cited<unknown>, valueText: string): HTMLElement {
-  const link = el('a', { href: c.source.url, target: '_blank', rel: 'noopener', class: 'source', title: c.source.note ?? '' }, 'src');
-  const badge = isUnverified(c) ? el('span', { class: 'unverified' }, 'unverified') : '';
-  return el('div', { class: 'readout' }, el('span', {}, label, badge), el('span', { class: 'value' }, `${valueText} `, link));
-}
-
-export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h: HashState): void; readoutSection: HTMLElement } {
+export function buildPanel(
+  root: HTMLElement,
+  o: PanelOptions,
+): { setScenario(h: HashState): void; readoutSection: HTMLElement; refreshText(): void } {
+  const labels = createTextBindings();
+  let paramLabels = createTextBindings();
+  type TextKey = { [K in MessageKey]: Messages[K] extends string ? K : never }[MessageKey];
+  const text = (key: TextKey): Text => labels.text(() => t()[key]);
+  const citedRow = (
+    label: () => string,
+    field: (typeof NUMERIC_FIELDS)[number] | 'turningCircle',
+    c: Cited<unknown>,
+    value: () => string,
+  ): HTMLElement => {
+    const link = el('a', { href: c.source.url, target: '_blank', rel: 'noopener', class: 'source' }, text('vehicle.source'));
+    labels.attribute(link, 'title', () =>
+      o.vehicle.spec.id === 'taos-trendline-mx-2025' ? t()[`taos-trendline-mx-2025.${field}`] : (c.source.note ?? ''),
+    );
+    labels.attribute(link, 'aria-label', () => `${t()['vehicle.source']}: ${label()}`);
+    const badge = isUnverified(c) ? el('span', { class: 'unverified' }, text('vehicle.unverified')) : '';
+    return el(
+      'div',
+      { class: 'readout' },
+      el('span', {}, labels.text(label), badge),
+      el('span', { class: 'value' }, labels.text(value), ' ', link),
+    );
+  };
+  const languageSelect = el(
+    'select',
+    { 'aria-label': 'Language / Idioma' },
+    el('option', { value: 'en', lang: 'en' }, 'English'),
+    el('option', { value: 'es', lang: 'es-MX' }, 'Español'),
+  );
+  languageSelect.value = getLanguage();
+  languageSelect.addEventListener('change', () => {
+    const value = languageSelect.value;
+    if (value === 'en' || value === 'es') selectLanguage(value);
+    languageSelect.blur();
+  });
+  const languageRow = el('label', { class: 'language' }, text('language'), languageSelect);
   let presetId = o.initial.presetId;
   let params: Params = { ...o.initial.params };
   let mirrors = o.initial.mirrors;
 
-  const presetSelect = el('select', { 'aria-label': 'Scenario preset' });
-  for (const p of PRESETS) presetSelect.append(el('option', { value: p.id }, p.name));
+  const presetSelect = el('select');
+  labels.attribute(presetSelect, 'aria-label', () => t()['scenario.select']);
+  for (const p of PRESETS) presetSelect.append(el('option', { value: p.id }, text(`scenario.${p.id}`)));
   const paramsBox = el('div');
-  const scenario = el('fieldset', {}, el('legend', {}, 'Scenario'), presetSelect, paramsBox);
+  const scenario = el('fieldset', {}, el('legend', {}, text('scenario')), presetSelect, paramsBox);
 
   const emit = (): void => o.onScenario({ presetId, params: { ...params }, mirrors });
 
   const renderParams = (): void => {
     paramsBox.replaceChildren();
+    paramLabels = createTextBindings();
     const def = getPreset(presetId)!;
     const inputs = new Map<string, HTMLInputElement>();
     for (const p of def.params) {
@@ -74,7 +112,14 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') input.blur();
       });
-      paramsBox.append(el('label', { class: 'param' }, `${p.label} (${p.unit === 'flag' ? '0/1' : p.unit})`, input));
+      paramsBox.append(
+        el(
+          'label',
+          { class: 'param' },
+          paramLabels.text(() => `${t()[`param.${p.key}`]} (${p.unit === 'flag' ? '0/1' : p.unit === 'deg' ? '°' : p.unit})`),
+          input,
+        ),
+      );
     }
   };
 
@@ -94,79 +139,77 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     mirrorsInput.blur();
   });
   const d = o.vehicle.spec;
-  const labels: Record<(typeof NUMERIC_FIELDS)[number], string> = {
-    length: 'Length',
-    widthBody: 'Width (body)',
-    widthMirrors: 'Width (mirrors)',
-    height: 'Height',
-    wheelbase: 'Wheelbase',
-    frontOverhang: 'Front overhang',
-    rearOverhang: 'Rear overhang',
-    trackFront: 'Track front',
-    trackRear: 'Track rear',
-    tireWidth: 'Tyre width',
-    wheelDiameter: 'Wheel diameter',
-    mirrorLongitudinal: 'Mirror position',
-    mirrorLength: 'Mirror length',
-  };
   const vehicleCard = el(
     'fieldset',
     {},
     el('legend', {}, `${d.name} · ${d.market} ${d.modelYear}`),
-    ...NUMERIC_FIELDS.map((f) => citedRow(labels[f], d[f], `${(d[f].value * 1000).toFixed(0)} mm`)),
-    citedRow(`Turning circle (${d.turningCircle.value.kind})`, d.turningCircle, `${d.turningCircle.value.diameter.toFixed(2)} m`),
+    ...NUMERIC_FIELDS.map((f) =>
+      citedRow(
+        () => t()[`vehicle.${f}`],
+        f,
+        d[f],
+        () => `${fmt(d[f].value * 1000, 0)} mm`,
+      ),
+    ),
+    citedRow(
+      () => t()[`vehicle.turningCircle.${d.turningCircle.value.kind}`],
+      'turningCircle',
+      d.turningCircle,
+      () => `${fmt(d.turningCircle.value.diameter, 2)} m`,
+    ),
     el(
       'div',
       { class: 'readout' },
-      el('span', {}, 'Max steer (derived)'),
-      el('span', { class: 'value' }, `${((o.vehicle.maxSteer * 180) / Math.PI).toFixed(1)}°`),
+      el('span', {}, text('vehicle.maxSteer')),
+      el(
+        'span',
+        { class: 'value' },
+        labels.text(() => `${fmt((o.vehicle.maxSteer * 180) / Math.PI, 1)}°`),
+      ),
     ),
-    el('label', { class: 'param' }, 'Include mirrors', mirrorsInput),
+    el('label', { class: 'param' }, text('vehicle.mirrors'), mirrorsInput),
   );
 
   const timeScale = el('input', { type: 'range', min: '0.1', max: '1', step: '0.05', value: '1' });
   timeScale.addEventListener('input', () => o.onTimeScale(Number(timeScale.value)));
   // Mouse/touch commits return focus to driving; a `change` listener would also blur on every keyboard step, so keyboard stepping after Tab-focus would stop.
   timeScale.addEventListener('pointerup', () => timeScale.blur());
-  const resetBtn = el('button', { type: 'button' }, 'Reset (R)');
+  const resetBtn = el('button', { type: 'button' }, text('controls.reset'));
   resetBtn.addEventListener('click', () => o.onReset());
-  const fitBtn = el('button', { type: 'button' }, 'Fit view (F)');
+  const fitBtn = el('button', { type: 'button' }, text('controls.fit'));
   fitBtn.addEventListener('click', () => o.onFit());
   // Touch has no wheel, and the narrow layout is where touch is likely.
-  const zoomOutBtn = el('button', { type: 'button' }, 'Zoom −');
+  const zoomOutBtn = el('button', { type: 'button' }, text('controls.zoomOut'));
   zoomOutBtn.addEventListener('click', () => o.onZoom(1 / 1.25));
-  const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
+  const zoomInBtn = el('button', { type: 'button' }, text('controls.zoomIn'));
   zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
   const pad = el('div', { class: 'pad wide-only' });
-  const padKeys: [string, DriveKey, string][] = [
-    ['◀', 'left', 'Steer left'],
-    ['▲', 'forward', 'Forward'],
-    ['▶', 'right', 'Steer right'],
-    ['⟲ rewind', 'rewind', 'Rewind'],
-    ['▼', 'reverse', 'Reverse'],
-    ['centre', 'centre', 'Centre steering'],
+  const padKeys: [() => string, DriveKey, TextKey][] = [
+    [() => '◀', 'left', 'drive.left'],
+    [() => '▲', 'forward', 'drive.forward'],
+    [() => '▶', 'right', 'drive.right'],
+    [() => t()['controls.rewind'], 'rewind', 'drive.rewind'],
+    [() => '▼', 'reverse', 'drive.reverse'],
+    [() => t()['controls.centre'], 'centre', 'drive.centre'],
   ];
   for (const [label, key, name] of padKeys) {
-    const b = el('button', { type: 'button', 'aria-label': name }, label);
+    const b = el('button', { type: 'button' }, labels.text(label));
+    labels.attribute(b, 'aria-label', () => t()[name]);
     o.bind(b, key);
     pad.append(b);
   }
   const controls = el(
     'fieldset',
     {},
-    el('legend', {}, 'Drive'),
-    el('label', { class: 'param' }, 'Time scale', timeScale),
+    el('legend', {}, text('controls')),
+    el('label', { class: 'param' }, text('controls.timeScale'), timeScale),
     pad,
     el('div', { class: 'pad two' }, resetBtn, fitBtn, zoomOutBtn, zoomInBtn),
-    el(
-      'p',
-      { class: 'source keys-hint' },
-      'Keys: arrows/WASD drive · Tab to a drive button, hold Enter · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
-    ),
+    el('p', { class: 'source keys-hint' }, text('controls.hint')),
   );
 
-  const readoutSection = el('fieldset', {}, el('legend', {}, 'Readouts'));
-  root.replaceChildren(scenario, readoutSection, controls, vehicleCard);
+  const readoutSection = el('fieldset', {}, el('legend', {}, text('readouts')));
+  root.replaceChildren(languageRow, scenario, readoutSection, controls, vehicleCard);
 
   const setScenario = (h: HashState): void => {
     presetId = h.presetId;
@@ -177,5 +220,13 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     renderParams();
   };
   setScenario(o.initial);
-  return { setScenario, readoutSection };
+  return {
+    setScenario,
+    readoutSection,
+    refreshText() {
+      labels.refresh();
+      paramLabels.refresh();
+      languageSelect.value = getLanguage();
+    },
+  };
 }
