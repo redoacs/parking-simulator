@@ -1,3 +1,4 @@
+import { getLanguage, initLanguage, LANGUAGE_TAGS, onLanguageChange, t } from './i18n';
 import taos from './vehicle/data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './vehicle/validate';
 import { deriveVehicle } from './vehicle/derive';
@@ -24,34 +25,41 @@ declare global {
   }
 }
 
-function showFatal(message: string): void {
+let fatalMessage: (() => string) | null = null;
+
+function showFatal(message: () => string): void {
   const fatal = document.getElementById('fatal') as HTMLDivElement;
   if (!fatal.hidden) return; // first message wins: it is the root cause, later ones are fallout
   fatal.hidden = false;
-  fatal.textContent = message;
+  fatalMessage = message;
+  fatal.textContent = message();
 }
 
 async function main(): Promise<void> {
+  initLanguage();
+  const refreshDocument = (): void => {
+    document.documentElement.lang = getLanguage() === 'en' ? 'en' : LANGUAGE_TAGS.es;
+    document.title = t()['app.title'];
+    if (fatalMessage) document.getElementById('fatal')!.textContent = fatalMessage();
+  };
+  refreshDocument();
+  onLanguageChange(refreshDocument);
   const canvas = document.getElementById('gpu') as HTMLCanvasElement;
   let vehicle;
   try {
     vehicle = deriveVehicle(validateVehicleSpec(taos));
   } catch (e) {
-    showFatal(`Vehicle data invalid: ${(e as Error).message}`);
+    showFatal(() => t()['error.vehicle']({ detail: String(e) }));
     return;
   }
   let renderer: Renderer;
   try {
     renderer = await Renderer.create(canvas);
   } catch (e) {
-    showFatal(
-      e instanceof WebGlUnavailableError
-        ? `${e.message} Requires a browser with WebGL2: any current Chrome, Edge, Firefox or Safari. If yours is current, hardware acceleration may be switched off.`
-        : String(e),
-    );
+    showFatal(() => (e instanceof WebGlUnavailableError ? t()['error.webgl'] : t()['error.startup']({ detail: String(e) })));
     return;
   }
-  renderer.onContextLost((message) => {
+  renderer.onContextLost(() => {
     let store: KeyValueStore | null = null;
     try {
       store = window.sessionStorage;
@@ -59,10 +67,7 @@ async function main(): Promise<void> {
       store = null;
     }
     if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
-    else
-      showFatal(
-        `The GPU was lost (${message}) and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.`,
-      );
+    else showFatal(() => t()['error.gpu']);
   });
 
   const app = new App(canvas, renderer, vehicle);
@@ -96,7 +101,8 @@ async function main(): Promise<void> {
     onZoom: (f) => app.zoomBy(f),
     bind: (b, k) => app.input.bind(b, k),
   });
-  app.onSnapshot = createReadouts(hud, panel.readoutSection);
+  const readouts = createReadouts(hud, panel.readoutSection);
+  app.onSnapshot = readouts.update;
   // Compact layout: the panel is a sheet over the scene. The class does nothing in the wide layout.
   const setSheet = (open: boolean): void => {
     const wasOpen = document.body.classList.contains('sheet-open');
@@ -119,6 +125,12 @@ async function main(): Promise<void> {
     },
   });
   app.viewInsets = () => overlay.freeAreas();
+  onLanguageChange(() => {
+    panel.refreshText();
+    overlay.refreshText();
+    readouts.refreshText();
+    readouts.update(app.snapshot());
+  });
   // A press on the scene, or Escape, closes the sheet.
   canvas.addEventListener('pointerdown', () => {
     setSheet(false);
@@ -138,6 +150,6 @@ async function main(): Promise<void> {
 }
 
 // Never a silent blank canvas: anything that escapes main() or fires later lands in #fatal.
-window.addEventListener('error', (e) => showFatal(`Unexpected error: ${e.message}`));
-window.addEventListener('unhandledrejection', (e) => showFatal(`Unexpected error: ${String(e.reason)}`));
-main().catch((e: unknown) => showFatal(`Startup failed: ${String(e)}`));
+window.addEventListener('error', (e) => showFatal(() => t()['error.unexpected']({ detail: e.message })));
+window.addEventListener('unhandledrejection', (e) => showFatal(() => t()['error.unexpected']({ detail: String(e.reason) })));
+main().catch((e: unknown) => showFatal(() => t()['error.startup']({ detail: String(e) })));

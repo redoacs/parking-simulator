@@ -19,14 +19,13 @@ function constrain(p: Params): Params {
  */
 export const garage: PresetDef = {
   id: 'garage',
-  name: 'Single garage with driveway',
   params: [
-    { key: 'doorWidth', label: 'Door opening', unit: 'm', min: 2.2, max: 3.0, step: 0.05, default: 2.4 },
-    { key: 'interiorWidth', label: 'Interior width', unit: 'm', min: 2.6, max: 4.0, step: 0.05, default: 3.0 },
-    { key: 'interiorDepth', label: 'Interior depth', unit: 'm', min: 5.0, max: 7.0, step: 0.1, default: 5.5 },
-    { key: 'drivewayWidth', label: 'Driveway width', unit: 'm', min: 2.5, max: 4.0, step: 0.05, default: 3.0 }, // same grid as doorWidth: constrain copies one into the other
-    { key: 'drivewayLength', label: 'Driveway length', unit: 'm', min: 3.0, max: 8.0, step: 0.1, default: 5.0 },
-    { key: 'approachAngle', label: 'Approach', unit: 'deg', min: 0, max: 90, step: 90, default: 0 },
+    { key: 'doorWidth', unit: 'm', min: 2.2, max: 3.0, step: 0.05, default: 2.4 },
+    { key: 'interiorWidth', unit: 'm', min: 2.6, max: 4.0, step: 0.05, default: 3.0 },
+    { key: 'interiorDepth', unit: 'm', min: 5.0, max: 7.0, step: 0.1, default: 5.5 },
+    { key: 'drivewayWidth', unit: 'm', min: 2.5, max: 4.0, step: 0.05, default: 3.0 }, // same grid as doorWidth: constrain copies one into the other
+    { key: 'drivewayLength', unit: 'm', min: 3.0, max: 8.0, step: 0.1, default: 5.0 },
+    { key: 'approachAngle', unit: 'deg', min: 0, max: 90, step: 90, default: 0 },
   ],
   constrain,
   build(raw): Scene {

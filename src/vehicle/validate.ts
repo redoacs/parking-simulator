@@ -19,7 +19,9 @@ function readSource(field: string, raw: unknown): Source {
   if (!isRecord(raw)) throw new VehicleSpecError(field, 'missing source');
   if (typeof raw.url !== 'string' || raw.url.length === 0) throw new VehicleSpecError(field, 'source.url required');
   if (typeof raw.accessed !== 'string') throw new VehicleSpecError(field, 'source.accessed required');
-  const s: Source = { url: raw.url, accessed: raw.accessed };
+  if (raw.confidence !== 'verified' && raw.confidence !== 'unverified')
+    throw new VehicleSpecError(field, 'source.confidence must be verified or unverified');
+  const s: Source = { url: raw.url, accessed: raw.accessed, confidence: raw.confidence };
   if (typeof raw.note === 'string') s.note = raw.note;
   return s;
 }

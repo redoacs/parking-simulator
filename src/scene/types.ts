@@ -17,9 +17,25 @@ export interface Scene {
   start: VehicleState;
 }
 
+export type PresetId = 'parallel' | 'perpendicular' | 'garage';
+export type ParamId =
+  | 'spotLength'
+  | 'spotWidth'
+  | 'laneWidth'
+  | 'kerb'
+  | 'bayWidth'
+  | 'bayDepth'
+  | 'aisleWidth'
+  | 'neighbours'
+  | 'doorWidth'
+  | 'interiorWidth'
+  | 'interiorDepth'
+  | 'drivewayWidth'
+  | 'drivewayLength'
+  | 'approachAngle';
+
 export interface ParamDef {
-  key: string;
-  label: string;
+  key: ParamId;
   /** 'flag' is a boolean modelled as 0/1 (min 0, max 1, step 1). */
   unit: 'm' | 'deg' | 'flag';
   min: number;
@@ -31,8 +47,7 @@ export interface ParamDef {
 export type Params = Record<string, number>;
 
 export interface PresetDef {
-  id: string;
-  name: string;
+  id: PresetId;
   params: ParamDef[];
   /** Cross-param rules the per-param ranges cannot express. Applied by `clampParams`, so the UI and hash show what is built. */
   constrain?(p: Params): Params;

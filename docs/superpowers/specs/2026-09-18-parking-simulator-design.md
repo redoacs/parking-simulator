@@ -32,7 +32,8 @@ src/
   sim/       kinematic bicycle model, control input, history      (pure)
   geom/      vectors, polygons, distances, turning geometry       (pure)
   render/    WebGL2 context, passes, GLSL shaders, camera         (browser)
-  ui/        panel, readouts, presets UI, input bindings          (browser)
+  ui/        panel, readouts, text bindings, input bindings      (browser)
+  i18n/      EN/ES catalogs, language preferences, number formatting
   scene/     Scene type + parametric preset generators            (pure)
   app.ts     fixed-step loop, history, clearance, render coordination
   main.ts    startup and UI wiring
@@ -57,7 +58,7 @@ rendering axis yet.
 **`VehicleSpec`** (`src/vehicle/data/<id>.json`):
 
 ```ts
-interface Cited<T> { value: T; source: { url: string; accessed: string; note?: string } }
+interface Cited<T> { value: T; source: { url: string; accessed: string; note?: string; confidence: 'verified' | 'unverified' } }
 interface VehicleSpec {
   id: string; name: string; market: string; modelYear: number;
   length: Cited<number>;            // overall, m
@@ -78,7 +79,7 @@ interface VehicleSpec {
 ```
 
 A field that cannot be sourced from an official document for this vehicle is marked
-`note: "unverified…"` and shown as such in the UI, including the track widths and
+`source.confidence: "unverified"` and shown as such in the UI, including the track widths and
 turning circle borrowed from the 2024 US model and the interpretation of the
 MX sheet's width as excluding mirrors. `length` must equal
 `wheelbase + frontOverhang + rearOverhang` within 0.01 m or validation fails.
@@ -197,8 +198,22 @@ those inputs; the renderer owns GPU resources.
 
 ## 6. UI
 
-Plain HTML/CSS/TS, no framework. Left panel:
+Plain HTML/CSS/TS, no framework. English and Mexican Spanish use bundled typed
+catalogs in `src/i18n/`. Preference order is saved choice, first supported browser
+language, then English. Only the choice is stored locally; denied storage leaves
+switching usable for the current page. The `Language / Idioma` selector updates
+existing text nodes and attributes, including document title/language and fatal
+summaries, without replacing controls or changing simulation/history/camera.
+Displayed numbers use cached Intl formatters (en-US/es-MX, no grouping); numeric
+inputs, scenario IDs/parameter keys and the URL hash remain locale-independent.
+Source-note explanations and US-sheet labels are translated by vehicle id/field;
+snippets already in Spanish are reused. Numeric source values, citation links,
+vehicle names and raw diagnostic details retain their original content. Required confidence metadata controls the
+badge regardless of note language. The current catalogs cover the bundled Taos.
 
+Left panel:
+
+- Language selector (English / Español).
 - Preset selector + its numeric inputs (live; changing a value rebuilds the
   scene and resets the car).
 - Vehicle card: name, each dimension with a link to its source, "unverified"
@@ -228,7 +243,7 @@ clusters (portrait) or between them (landscape, tablets). Supported from
 - `webglcontextlost`: reload, unless the previous loss was under 60 s ago; then
   show the message (a reload loop is worse than a message).
 - Vehicle JSON validated at load (positive finite numbers, length identity,
-  sources present); a failure halts startup with the field named.
+  sources and valid confidence present); a failure halts startup with the field named.
 - Preset params clamped; generators are written so no clamped combination
   yields overlapping or self-intersecting obstacles, and a unit test asserts
   it across the parameter grid corners.
@@ -264,7 +279,7 @@ path). Also used during development to verify visually.
 - GitHub Actions on push to `main` and on PRs: install (frozen lockfile),
   typecheck, lint, format check, unit tests, build, and required browser tests; on
   `main` deploy `dist/` only after both the check and browser jobs pass. Shared
-  smoke runs on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
+  smoke and language tests run on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
   The deployment build sets `BASE_PATH=/parking-simulator/`; Vite defaults to `/`
   when that environment variable is absent.
 - Repository: `redoacs/parking-simulator`; publication uses GitHub Pages.
@@ -273,7 +288,8 @@ path). Also used during development to verify visually.
 
 Automatic planner, obstacle editor, 3D camera, vehicle
 dynamics (slip, suspension, acceleration curves), multiple vehicles at once,
-persistence beyond the URL hash, GPU text.
+simulation persistence beyond the URL hash, GPU text. Language preference is
+stored locally since the English/Spanish update.
 
 ## Remaining verification
 

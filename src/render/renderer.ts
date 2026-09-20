@@ -61,11 +61,9 @@ export class Renderer {
   }
 
   /** The GL context was lost (GPU reset, driver update, too many contexts). Nothing is drawn after this. */
-  onContextLost(cb: (message: string) => void): void {
+  onContextLost(cb: () => void): void {
     // No preventDefault: that would opt into a restored context, and nothing here rebuilds GL objects for one.
-    this.canvas.addEventListener('webglcontextlost', () => {
-      cb('WebGL context lost');
-    });
+    this.canvas.addEventListener('webglcontextlost', cb);
   }
 
   /** Match the canvas backing store to its CSS size × devicePixelRatio. */

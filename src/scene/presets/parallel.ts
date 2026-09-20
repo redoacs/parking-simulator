@@ -11,12 +11,11 @@ import { BOUNDS_PAD, NEIGHBOUR_CAR, type Obstacle, type PresetDef, type Scene } 
  */
 export const parallel: PresetDef = {
   id: 'parallel',
-  name: 'Parallel spot between two cars',
   params: [
-    { key: 'spotLength', label: 'Spot length', unit: 'm', min: 5.0, max: 8.0, step: 0.1, default: 6.2 },
-    { key: 'spotWidth', label: 'Spot width', unit: 'm', min: 2.0, max: 3.0, step: 0.05, default: 2.4 },
-    { key: 'laneWidth', label: 'Lane width', unit: 'm', min: 2.5, max: 5.0, step: 0.1, default: 3.2 },
-    { key: 'kerb', label: 'Kerb present', unit: 'flag', min: 0, max: 1, step: 1, default: 1 },
+    { key: 'spotLength', unit: 'm', min: 5.0, max: 8.0, step: 0.1, default: 6.2 },
+    { key: 'spotWidth', unit: 'm', min: 2.0, max: 3.0, step: 0.05, default: 2.4 },
+    { key: 'laneWidth', unit: 'm', min: 2.5, max: 5.0, step: 0.1, default: 3.2 },
+    { key: 'kerb', unit: 'flag', min: 0, max: 1, step: 1, default: 1 },
   ],
   build(p): Scene {
     const spotLength = p.spotLength!;

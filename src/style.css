@@ -75,6 +75,12 @@ legend {
   color: var(--muted);
   padding: 0 4px;
 }
+.language {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  align-items: center;
+  gap: 8px;
+}
 label.param {
   display: grid;
   grid-template-columns: 1fr 80px;
@@ -163,6 +169,8 @@ button:active {
   #hud {
     left: calc(12px + env(safe-area-inset-left));
     top: calc(12px + env(safe-area-inset-top));
+    right: calc(64px + env(safe-area-inset-right)); /* keep localized contact text clear of the menu */
+    overflow-wrap: anywhere;
   }
   #panel {
     position: fixed;

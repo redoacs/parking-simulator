@@ -1,3 +1,5 @@
+import { t } from '../i18n';
+import { createTextBindings } from './textBindings';
 import type { Insets } from '../render/camera';
 import type { DriveKey } from './input';
 
@@ -6,15 +8,6 @@ export interface OverlayOptions {
   bind(button: HTMLElement, key: DriveKey): void;
   onZoom(factor: number): void;
   onMenu(): void;
-}
-
-function button(label: string, name: string, className = ''): HTMLButtonElement {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = label;
-  b.className = className;
-  b.setAttribute('aria-label', name);
-  return b;
 }
 
 /**
@@ -49,18 +42,28 @@ function group(className: string, ...children: HTMLElement[]): HTMLDivElement {
  * Controls laid over the scene for the compact (phone) layout: steering under the left thumb, forward/reverse under the
  * right, and a menu button for the settings sheet. CSS hides the whole overlay in the wide layout.
  */
-export function buildOverlay(root: HTMLElement, o: OverlayOptions): { freeAreas(): Insets[] } {
-  const held = (label: string, name: string, key: DriveKey, className = ''): HTMLButtonElement => {
+export function buildOverlay(root: HTMLElement, o: OverlayOptions): { freeAreas(): Insets[]; refreshText(): void } {
+  const labels = createTextBindings();
+  type Name = `drive.${Exclude<DriveKey, 'stop' | 'fit' | 'reset'>}` | 'overlay.settings' | 'overlay.zoomIn' | 'overlay.zoomOut';
+  const button = (label: string, name: Name, className = ''): HTMLButtonElement => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    b.className = className;
+    labels.attribute(b, 'aria-label', () => t()[name]);
+    return b;
+  };
+  const held = (label: string, name: Name, key: DriveKey, className = ''): HTMLButtonElement => {
     const b = button(label, name, className);
     o.bind(b, key);
     return b;
   };
-  const zoom = (label: string, name: string, factor: number): HTMLButtonElement => {
+  const zoom = (label: string, name: Name, factor: number): HTMLButtonElement => {
     const b = button(label, name, 'small');
     onTap(b, () => o.onZoom(factor));
     return b;
   };
-  const menu = button('☰', 'Settings', 'menu');
+  const menu = button('☰', 'overlay.settings', 'menu');
   menu.setAttribute('aria-expanded', 'false');
   menu.setAttribute('aria-controls', 'panel');
   onTap(menu, () => o.onMenu());
@@ -69,13 +72,13 @@ export function buildOverlay(root: HTMLElement, o: OverlayOptions): { freeAreas(
     menu,
     group(
       'thumb left',
-      group('row', held('⟲', 'Rewind', 'rewind', 'small'), held('C', 'Centre steering', 'centre', 'small')),
-      group('row', held('◀', 'Steer left', 'left'), held('▶', 'Steer right', 'right')),
+      group('row', held('⟲', 'drive.rewind', 'rewind', 'small'), held('C', 'drive.centre', 'centre', 'small')),
+      group('row', held('◀', 'drive.left', 'left'), held('▶', 'drive.right', 'right')),
     ),
     group(
       'thumb right',
-      group('row', zoom('−', 'Zoom out', 1 / 1.25), zoom('+', 'Zoom in', 1.25)),
-      group('column', held('▲', 'Forward', 'forward'), held('▼', 'Reverse', 'reverse')),
+      group('row', zoom('−', 'overlay.zoomOut', 1 / 1.25), zoom('+', 'overlay.zoomIn', 1.25)),
+      group('column', held('▲', 'drive.forward', 'forward'), held('▼', 'drive.reverse', 'reverse')),
     ),
   );
   // A long press must hold the control, not open the browser's context menu.
@@ -99,5 +102,5 @@ export function buildOverlay(root: HTMLElement, o: OverlayOptions): { freeAreas(
       { top: 0, right: stage.right - right.left + margin, bottom: 0, left: left.right - stage.left + margin },
     ];
   };
-  return { freeAreas };
+  return { freeAreas, refreshText: labels.refresh };
 }
