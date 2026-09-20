@@ -1,6 +1,7 @@
 import { checkClearance, isParked, parkedOffsets, worldOutline, type Clearance } from './geom/clearance';
 import { transformPolygon, type Polygon } from './geom/polygon';
 import { guideCircles } from './geom/turning';
+import type { Insets } from './render/camera';
 import type { Renderer } from './render/renderer';
 import { ringInstancesFor, rulerPolygon, scenePolygons, vehiclePolygons } from './render/scenePolys';
 import type { ColoredPolygon } from './render/polygons';
@@ -34,6 +35,12 @@ export interface Snapshot {
 export class App {
   readonly input = new DriveInput();
   onSnapshot?: (s: Snapshot) => void;
+  /**
+   * Areas of the canvas that controls laid over it leave free, as insets in CSS pixels. Several candidates may be given
+   * (below the menu button and above a bottom band of controls, or between two side columns); fitView uses whichever shows the
+   * scene larger. None means the whole canvas.
+   */
+  viewInsets?: () => Insets[];
 
   private presetId = PRESETS[0]!.id;
   private params: Params = defaultParams(PRESETS[0]!);
@@ -67,7 +74,24 @@ export class App {
     this.simParams = simParamsFor(vehicle);
     this.attachCameraControls();
     this.input.attach(window);
-    new ResizeObserver(() => this.renderer.resize()).observe(canvas);
+    // Re-fit when the device is turned, and only then. The canvas aspect is no proxy for that: a desktop window dragged
+    // past square, or a phone's on-screen keyboard, flips the aspect too, and re-fitting there throws away the user's
+    // zoom. `screen.orientation` reports the real thing. Its event can arrive before the new layout, so the fit waits
+    // for the resize that follows, with a timer in case none does.
+    let turned = false;
+    const refit = (): void => {
+      if (!turned) return;
+      turned = false;
+      this.fitView();
+    };
+    (screen.orientation as ScreenOrientation | undefined)?.addEventListener('change', () => {
+      turned = true;
+      setTimeout(refit, 300);
+    });
+    new ResizeObserver(() => {
+      if (turned) refit();
+      else this.renderer.resize();
+    }).observe(canvas);
   }
 
   setPreset(id: string, params: Params): void {
@@ -111,7 +135,18 @@ export class App {
 
   fitView(): void {
     this.renderer.resize();
-    this.renderer.camera.fit(this.scene.bounds);
+    const cam = this.renderer.camera;
+    const candidates = this.viewInsets?.() ?? [];
+    let best: Insets | undefined;
+    let bestPpm = 0;
+    for (const inset of candidates) {
+      cam.fit(this.scene.bounds, inset);
+      if (cam.ppm > bestPpm) {
+        bestPpm = cam.ppm;
+        best = inset;
+      }
+    }
+    cam.fit(this.scene.bounds, best);
   }
 
   snapshot(): Snapshot {
@@ -238,23 +273,37 @@ export class App {
 
   private attachCameraControls(): void {
     const cam = this.renderer.camera;
-    let dragging = false;
-    let lastX = 0;
-    let lastY = 0;
+    // Active pointers in canvas-relative CSS pixels: one pans, two pinch, any further ones are ignored.
+    const pointers = new Map<number, { x: number; y: number }>();
+    const at = (e: PointerEvent): { x: number; y: number } => {
+      const r = this.canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
     this.canvas.addEventListener('pointerdown', (e) => {
-      dragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      if (e.pointerType === 'mouse' && e.button !== 0) return; // a right-click opens a menu that swallows the pointerup
+      if (pointers.size >= 2) return;
+      pointers.set(e.pointerId, at(e));
       this.canvas.setPointerCapture(e.pointerId);
     });
     this.canvas.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      cam.panByCss(e.clientX - lastX, e.clientY - lastY);
-      lastX = e.clientX;
-      lastY = e.clientY;
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
+      if (e.pointerType === 'mouse' && e.buttons === 0) {
+        // The release was missed: a right-click during a left-drag opens a native menu that swallows the pointerup.
+        pointers.delete(e.pointerId);
+        return;
+      }
+      const now = at(e);
+      if (pointers.size === 1) {
+        cam.panByCss(now.x - prev.x, now.y - prev.y);
+      } else {
+        const other = [...pointers].find(([id]) => id !== e.pointerId)![1];
+        cam.pinchCss(prev, other, now, other);
+      }
+      pointers.set(e.pointerId, now);
     });
-    const end = (): void => {
-      dragging = false;
+    const end = (e: PointerEvent): void => {
+      pointers.delete(e.pointerId);
     };
     this.canvas.addEventListener('pointerup', end);
     this.canvas.addEventListener('pointercancel', end);

@@ -7,6 +7,7 @@ import { App, type Snapshot } from './app';
 import type { DriveKey } from './ui/input';
 import { decideOnDeviceLoss, type KeyValueStore } from './ui/deviceLoss';
 import { decodeHash, encodeHash, type HashState } from './ui/hash';
+import { buildOverlay } from './ui/overlay';
 import { buildPanel } from './ui/panel';
 import { createReadouts } from './ui/readouts';
 import { PRESETS, defaultParams } from './scene/presets';
@@ -96,6 +97,35 @@ async function main(): Promise<void> {
     bind: (b, k) => app.input.bind(b, k),
   });
   app.onSnapshot = createReadouts(hud, panel.readoutSection);
+  // Compact layout: the panel is a sheet over the scene. The class does nothing in the wide layout.
+  const setSheet = (open: boolean): void => {
+    const wasOpen = document.body.classList.contains('sheet-open');
+    document.body.classList.toggle('sheet-open', open);
+    const menu = document.querySelector('#overlay .menu');
+    menu?.setAttribute('aria-expanded', String(open));
+    // Keyboard users: the panel comes before the stage in the DOM, so without this the next Tab lands under the sheet.
+    if (open && !wasOpen) panelRoot.focus();
+    else if (!open && wasOpen && menu instanceof HTMLElement && panelRoot.contains(document.activeElement)) menu.focus();
+  };
+  const overlay = buildOverlay(document.getElementById('overlay')!, {
+    bind: (b, k) => {
+      app.input.bind(b, k);
+    },
+    onZoom: (f) => {
+      app.zoomBy(f);
+    },
+    onMenu: () => {
+      setSheet(!document.body.classList.contains('sheet-open'));
+    },
+  });
+  app.viewInsets = () => overlay.freeAreas();
+  // A press on the scene, or Escape, closes the sheet.
+  canvas.addEventListener('pointerdown', () => {
+    setSheet(false);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !(e.target instanceof HTMLSelectElement)) setSheet(false); // a select uses Escape to shut its own list
+  });
   window.addEventListener('hashchange', () => {
     const h = decodeHash(location.hash);
     if (h) {

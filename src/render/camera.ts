@@ -1,6 +1,14 @@
 import type { Rect } from '../geom/polygon';
 import type { Vec2 } from '../geom/vec2';
 
+export interface Insets {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
 /** Orthographic top-down camera. ppm = device pixels per metre. */
 export class Camera {
   cx = 0;
@@ -55,11 +63,31 @@ export class Camera {
     this.cy += before.y - after.y;
   }
 
-  fit(r: Rect): void {
+  /**
+   * Two-finger gesture between two frames, in canvas-relative CSS pixels: zoom about the previous midpoint by the change
+   * in finger distance, then pan by the midpoint's movement. The world point under each finger stays under it, as long
+   * as the fingers do not twist about each other (the view never rotates).
+   */
+  pinchCss(prevA: Vec2, prevB: Vec2, a: Vec2, b: Vec2): void {
+    const prevDist = Math.hypot(prevB.x - prevA.x, prevB.y - prevA.y);
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const prevMid = { x: (prevA.x + prevB.x) / 2, y: (prevA.y + prevB.y) / 2 };
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    if (prevDist > 0 && dist > 0) this.zoomAtCss(prevMid.x, prevMid.y, dist / prevDist);
+    this.panByCss(mid.x - prevMid.x, mid.y - prevMid.y);
+  }
+
+  /** Fit a world rect into the canvas, or into the part of it that `inset` (CSS pixels per side) leaves free. */
+  fit(r: Rect, inset: Insets = NO_INSETS): void {
     const w = Math.max(1e-6, r.maxX - r.minX);
     const h = Math.max(1e-6, r.maxY - r.minY);
-    this.cx = (r.minX + r.maxX) / 2;
-    this.cy = (r.minY + r.maxY) / 2;
-    this.ppm = Math.min(this.widthPx / w, this.heightPx / h) * 0.9;
+    const freeW = Math.max(1, this.widthPx - (inset.left + inset.right) * this.dpr);
+    const freeH = Math.max(1, this.heightPx - (inset.top + inset.bottom) * this.dpr);
+    this.ppm = Math.min(freeW / w, freeH / h) * 0.9;
+    // The free area's centre sits this many device pixels right of and below the canvas centre.
+    const ox = ((inset.left - inset.right) / 2) * this.dpr;
+    const oy = ((inset.top - inset.bottom) / 2) * this.dpr;
+    this.cx = (r.minX + r.maxX) / 2 - ox / this.ppm;
+    this.cy = (r.minY + r.maxY) / 2 + oy / this.ppm;
   }
 }
