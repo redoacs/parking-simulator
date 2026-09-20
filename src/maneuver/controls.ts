@@ -7,8 +7,7 @@ export function commandsFor(legs: Leg[], initialSteer: number, sp: SimParams): C
   const merged: Leg[] = [];
   for (const leg of legs) {
     const previous = merged.at(-1);
-    if (previous?.steer === leg.steer && Math.sign(previous.distance) === Math.sign(leg.distance))
-      previous.distance += leg.distance;
+    if (previous?.steer === leg.steer && Math.sign(previous.distance) === Math.sign(leg.distance)) previous.distance += leg.distance;
     else merged.push({ ...leg });
   }
   const commands: Command[] = [];
