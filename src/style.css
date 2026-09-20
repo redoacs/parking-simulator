@@ -169,6 +169,8 @@ button:active {
   #hud {
     left: calc(12px + env(safe-area-inset-left));
     top: calc(12px + env(safe-area-inset-top));
+    right: calc(64px + env(safe-area-inset-right)); /* keep localized contact text clear of the menu */
+    overflow-wrap: anywhere;
   }
   #panel {
     position: fixed;

@@ -33,8 +33,10 @@ is blocked, switching still works for the current page.
 Switching updates labels, help, readouts, source notes, accessibility text, title
 and errors without resetting the run or changing its scenario link. Spanish
 uses Mexican terminology and `es-MX` number formatting; English numbers use
-`en-US`. Measurements remain metric. Original source quotes, vehicle names and
-raw technical diagnostics keep their original text.
+`en-US`. Measurements remain metric. Source-note explanations and US-sheet
+labels are translated; snippets already in Spanish are reused. Vehicle names,
+citation links, numerical source values and raw diagnostics retain their original
+content.
 
 Translations live in `src/i18n/en.ts` and `es.ts`. Both are bundled with the app;
 there is no translation service or runtime dependency. Add a message to English

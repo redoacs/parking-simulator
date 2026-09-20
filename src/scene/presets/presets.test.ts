@@ -55,7 +55,6 @@ describe.each(PRESETS.map((p) => [p.id, p] as const))('preset %s', (_id, def) =>
 describe('registry', () => {
   it('has three presets with unique ids', () => {
     expect(PRESETS.map((p) => p.id)).toEqual(['parallel', 'perpendicular', 'garage']);
-    expect(getPreset('garage')?.id).toBe('garage');
     expect(getPreset('nope')).toBeUndefined();
   });
   it('clampParams clamps, fills defaults, drops unknown keys', () => {

@@ -59,7 +59,7 @@ async function main(): Promise<void> {
     showFatal(() => (e instanceof WebGlUnavailableError ? t()['error.webgl'] : t()['error.startup']({ detail: String(e) })));
     return;
   }
-  renderer.onContextLost((message) => {
+  renderer.onContextLost(() => {
     let store: KeyValueStore | null = null;
     try {
       store = window.sessionStorage;
@@ -67,7 +67,7 @@ async function main(): Promise<void> {
       store = null;
     }
     if (decideOnDeviceLoss(store, Date.now()) === 'reload') location.reload();
-    else showFatal(() => t()['error.gpu']({ detail: message }));
+    else showFatal(() => t()['error.gpu']);
   });
 
   const app = new App(canvas, renderer, vehicle);

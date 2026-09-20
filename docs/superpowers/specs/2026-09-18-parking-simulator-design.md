@@ -206,8 +206,9 @@ existing text nodes and attributes, including document title/language and fatal
 summaries, without replacing controls or changing simulation/history/camera.
 Displayed numbers use cached Intl formatters (en-US/es-MX, no grouping); numeric
 inputs, scenario IDs/parameter keys and the URL hash remain locale-independent.
-Source notes are translated by vehicle id/field; source quotes and diagnostic
-details retain their original text. Required confidence metadata controls the
+Source-note explanations and US-sheet labels are translated by vehicle id/field;
+snippets already in Spanish are reused. Numeric source values, citation links,
+vehicle names and raw diagnostic details retain their original content. Required confidence metadata controls the
 badge regardless of note language. The current catalogs cover the bundled Taos.
 
 Left panel:

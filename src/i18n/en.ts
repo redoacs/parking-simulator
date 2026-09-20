@@ -40,6 +40,7 @@ export const en = {
   'vehicle.maxSteer': 'Max steer (derived)',
   'vehicle.mirrors': 'Include mirrors',
   'vehicle.source': 'src',
+  'vehicle.sourceLabel': 'Source',
   'vehicle.unverified': 'unverified',
   controls: 'Drive',
   'controls.timeScale': 'Time scale',
@@ -85,8 +86,7 @@ export const en = {
   'error.vehicle': ({ detail }: { detail: string }) => `Vehicle data invalid. Technical details: ${detail}`,
   'error.webgl':
     'Requires a browser with WebGL2: any current Chrome, Edge, Firefox or Safari. If yours is current, hardware acceleration may be switched off.',
-  'error.gpu': ({ detail }: { detail: string }) =>
-    `The GPU was lost and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU. Technical details: ${detail}`,
+  'error.gpu': 'The GPU was lost and reloading cannot safely be retried. Reload the page manually, or try another browser or GPU.',
   'error.unexpected': ({ detail }: { detail: string }) => `Unexpected error. Technical details: ${detail}`,
   'error.startup': ({ detail }: { detail: string }) => `Startup failed. Technical details: ${detail}`,
   // Original source notes remain the provenance owner; avoid copying their English text.

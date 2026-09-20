@@ -50,7 +50,7 @@ export function buildPanel(
     labels.attribute(link, 'title', () =>
       o.vehicle.spec.id === 'taos-trendline-mx-2025' ? t()[`taos-trendline-mx-2025.${field}`] : (c.source.note ?? ''),
     );
-    labels.attribute(link, 'aria-label', () => `${t()['vehicle.source']}: ${label()}`);
+    labels.attribute(link, 'aria-label', () => `${t()['vehicle.sourceLabel']}: ${label()}`);
     const badge = isUnverified(c) ? el('span', { class: 'unverified' }, text('vehicle.unverified')) : '';
     return el(
       'div',

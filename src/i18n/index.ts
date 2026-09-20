@@ -42,7 +42,7 @@ export function initLanguage(): void {
   } catch {
     // Storage may be denied; browser preferences still work.
   }
-  setLanguage(chooseLanguage(saved, navigator.languages));
+  setLanguage(chooseLanguage(saved, navigator.languages.length ? navigator.languages : [navigator.language]));
 }
 
 export function selectLanguage(next: Language): void {
@@ -65,5 +65,5 @@ export function fmt(value: number, digits: number): string {
     });
     numberFormats.set(key, formatter);
   }
-  return formatter.format(value);
+  return formatter.format(value === 0 ? 0 : value); // normalize exact -0, as the previous toFixed display did
 }

@@ -27,6 +27,8 @@ it.each(['en', 'es'] as const)('formats measurements with fixed precision and no
   expect(fmt(12.5, 1)).toBe('12.5');
   expect(fmt(10.7, 2)).toBe('10.70');
   expect(fmt(-2.25, 1)).toBe('-2.3');
+  expect(fmt(-0, 1)).toBe('0.0');
+  expect(fmt(-0.01, 1)).toBe('-0.0');
 });
 
 it('preserves numeric tokens in every translated vehicle source note', () => {

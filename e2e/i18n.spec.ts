@@ -1,3 +1,4 @@
+import { DEVICE_LOSS_KEY } from '../src/ui/deviceLoss';
 import { expect, test, type Page } from '@playwright/test';
 
 const language = (page: Page) => page.getByRole('combobox', { name: 'Language / Idioma' });
@@ -76,6 +77,23 @@ test('fatal summaries switch language and retain literal diagnostic text', async
   await expect(fatal.locator('b')).toHaveCount(0);
 });
 
+test('a repeated GPU-loss notification keeps a translated fatal message through a language switch', async ({ page }) => {
+  await page.goto('/');
+  await ready(page);
+  await language(page).selectOption('es');
+  // Exercise the event handler and no-reload policy; this is not a physical GPU failure.
+  await page.evaluate((key) => {
+    sessionStorage.setItem(key, String(Date.now()));
+    document.getElementById('gpu')!.dispatchEvent(new Event('webglcontextlost'));
+  }, DEVICE_LOSS_KEY);
+  await expect(page.locator('#fatal')).toContainText('Se perdió la conexión con la GPU');
+  await expect(page.locator('#fatal')).not.toContainText('WebGL context lost');
+  await language(page).selectOption('en');
+  await expect(page.locator('#fatal')).toContainText('The GPU was lost');
+  await page.evaluate(() => window.dispatchEvent(new ErrorEvent('error', { message: 'later fallout' })));
+  await expect(page.locator('#fatal')).not.toContainText('later fallout');
+});
+
 test.describe('Spanish browser preference', () => {
   test.use({ locale: 'es-MX' });
 
@@ -131,14 +149,15 @@ test.describe('Spanish browser preference', () => {
     await expect(page).toHaveTitle('Simulador de estacionamiento');
   });
 
-  test('keeps detection and switching usable when storage access is denied', async ({ page }) => {
-    await page.addInitScript(() =>
+  test('uses the single browser language and keeps switching usable with denied storage', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'languages', { value: [] });
       Object.defineProperty(window, 'localStorage', {
         get() {
           throw new DOMException('denied', 'SecurityError');
         },
-      }),
-    );
+      });
+    });
     await page.goto('/');
     await ready(page);
     await expect(language(page)).toHaveValue('es');
@@ -185,7 +204,11 @@ test.describe('Spanish browser preference', () => {
     await expect(page.getByRole('combobox', { name: 'Tipo de escenario' })).toBeVisible();
     await page.getByRole('button', { name: 'Ajustes' }).click();
     await expect(page.getByRole('button', { name: 'Reversa', exact: true })).toBeVisible();
-    const hudFits = await page.locator('#hud').evaluate((el) => el.getBoundingClientRect().right <= window.innerWidth);
-    expect(hudFits).toBe(true);
+    const overlap = await page.evaluate(() => {
+      const hud = document.getElementById('hud')!.getBoundingClientRect();
+      const menu = document.querySelector('#overlay .menu')!.getBoundingClientRect();
+      return hud.left < menu.right && hud.right > menu.left && hud.top < menu.bottom && hud.bottom > menu.top;
+    });
+    expect(overlap, 'contact readout must leave the menu button clear at 320px').toBe(false);
   });
 });

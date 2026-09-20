@@ -40,6 +40,7 @@ export const es = {
   'vehicle.maxSteer': 'Giro máximo (calculado)',
   'vehicle.mirrors': 'Incluir espejos',
   'vehicle.source': 'fuente',
+  'vehicle.sourceLabel': 'Fuente',
   'vehicle.unverified': 'sin verificar',
   controls: 'Conducción',
   'controls.timeScale': 'Escala de tiempo',
@@ -85,8 +86,8 @@ export const es = {
   'error.vehicle': ({ detail }: { detail: string }) => `Los datos del vehículo no son válidos. Detalles técnicos: ${detail}`,
   'error.webgl':
     'Se requiere un navegador con WebGL2: Chrome, Edge, Firefox o Safari actualizado. Si el tuyo está actualizado, es posible que la aceleración por hardware esté desactivada.',
-  'error.gpu': ({ detail }: { detail: string }) =>
-    `Se perdió la conexión con la GPU y no se puede volver a intentar la recarga de forma segura. Recarga la página manualmente o prueba otro navegador o GPU. Detalles técnicos: ${detail}`,
+  'error.gpu':
+    'Se perdió la conexión con la GPU y no se puede volver a intentar la recarga de forma segura. Recarga la página manualmente o prueba otro navegador o GPU.',
   'error.unexpected': ({ detail }: { detail: string }) => `Error inesperado. Detalles técnicos: ${detail}`,
   'error.startup': ({ detail }: { detail: string }) => `No se pudo iniciar el simulador. Detalles técnicos: ${detail}`,
   'taos-trendline-mx-2025.length': en['taos-trendline-mx-2025.length'],
