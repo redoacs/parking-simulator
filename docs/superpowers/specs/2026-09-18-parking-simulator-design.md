@@ -115,6 +115,12 @@ see `Scene`, so a later drawing editor emits the same type.
 
 Each parameter has a documented sane range; values are clamped.
 
+Since v1.2 every preset starts with the car pointing up the screen
+(`theta = π/2`), so the up/down keys match forward/reverse. Generators still
+describe their scene in its natural frame (street along +x, and so on) and
+`rotateScene` turns it by a multiple of 90° as the last step, which keeps what
+was on the car's right on its right. The view does not rotate afterwards.
+
 ## 3. Simulation
 
 - Fixed step `dt = 1/120 s` via an accumulator in `requestAnimationFrame`.

@@ -14,7 +14,8 @@ corepack enable pnpm
 pnpm install
 pnpm dev          # http://localhost:5173
 pnpm test         # unit tests (Vitest)
-pnpm test:e2e     # Playwright smoke (headless Chromium, no flags needed)
+pnpm test:e2e     # Playwright smoke (headless Chromium, no flags needed); builds and serves on port 4173,
+                  # and fails if that port is busy. Another port: E2E_PORT=4174 pnpm test:e2e
 pnpm build        # typecheck + production build in dist/
 ```
 

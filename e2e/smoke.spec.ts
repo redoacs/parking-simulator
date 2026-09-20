@@ -19,12 +19,13 @@ test('boots, drives, records clearance and envelope', async ({ page }) => {
 
   await page.evaluate(() => window.__sim!.setKey('reverse', true));
   // Poll the sim state rather than sleeping: App.frame clamps frameDt, so wall-clock time is not sim time.
-  await page.waitForFunction((x0) => window.__sim!.snapshot().state.x < x0 - 1.2, start.state.x, { timeout: 15_000 });
+  await page.waitForFunction((y0) => window.__sim!.snapshot().state.y < y0 - 1.2, start.state.y, { timeout: 15_000 });
   await page.evaluate(() => window.__sim!.setKey('reverse', false));
   await page.waitForTimeout(100);
 
   const after = await page.evaluate(() => window.__sim!.snapshot());
-  expect(after.state.x).toBeLessThan(start.state.x - 1.0);
+  // Scenes start with the car pointing up the screen (+y), so reversing lowers y.
+  expect(after.state.y).toBeLessThan(start.state.y - 1.0);
   expect(after.historyLength).toBeGreaterThan(60);
   expect(Number.isFinite(after.clearance!.distance)).toBe(true);
 
@@ -56,7 +57,7 @@ test('boots, drives, records clearance and envelope', async ({ page }) => {
   // vertically mirrored composite, but the screen can. Compare a swept point the car has since left (just behind where
   // its front bumper started) with a lane point beside it that nothing has covered. Both avoid the 1 m grid lines.
   const points = await page.evaluate(
-    ([x, y]) => [window.__sim!.worldToCss(x + 3.33, y + 0.37), window.__sim!.worldToCss(x + 3.33, y + 1.33)],
+    ([x, y]) => [window.__sim!.worldToCss(x - 0.37, y + 3.33), window.__sim!.worldToCss(x - 1.33, y + 3.33)],
     [start.state.x, start.state.y] as const,
   );
   const shot = (await page.locator('#gpu').screenshot()).toString('base64');
@@ -89,7 +90,7 @@ test('boots, drives, records clearance and envelope', async ({ page }) => {
   await page.waitForTimeout(100);
   const rewound = await page.evaluate(() => window.__sim!.snapshot());
   expect(rewound.historyLength).toBeLessThan(arced.historyLength);
-  expect(rewound.state.x).toBeGreaterThan(arced.state.x);
+  expect(rewound.state.y).toBeGreaterThan(arced.state.y);
 
   // Reset restores the start pose and clears the run.
   await page.evaluate(() => {
@@ -100,6 +101,7 @@ test('boots, drives, records clearance and envelope', async ({ page }) => {
   const reset = await page.evaluate(() => window.__sim!.snapshot());
   expect(reset.historyLength).toBe(0);
   expect(reset.state.x).toBeCloseTo(start.state.x, 3);
+  expect(reset.state.y).toBeCloseTo(start.state.y, 3);
   // simTime counts idle steps too, so 200 ms after the reset it reads ~0.2 s, not 0: assert the clock restarted.
   expect(reset.simTime).toBeLessThan(1);
   expect(reset.simTime).toBeLessThan(arced.simTime);
