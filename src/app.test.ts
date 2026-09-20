@@ -19,6 +19,7 @@ function harness(historySeconds?: number): {
   let pending: ((t: number) => void) | undefined;
   let now = 0;
   vi.stubGlobal('window', { addEventListener: () => undefined });
+  vi.stubGlobal('screen', {}); // no orientation API here: App must cope, as it does in browsers without one
   vi.stubGlobal(
     'ResizeObserver',
     class {

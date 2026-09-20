@@ -74,15 +74,23 @@ export class App {
     this.simParams = simParamsFor(vehicle);
     this.attachCameraControls();
     this.input.attach(window);
-    // Turning a phone flips the canvas between portrait and landscape, and the free area with it: fit again, or the scene
-    // keeps the old scale and overflows. Any other resize (a window drag, a phone's toolbar sliding away) keeps the
-    // user's view.
-    let wasPortrait: boolean | undefined;
+    // Re-fit when the device is turned, and only then. The canvas aspect is no proxy for that: a desktop window dragged
+    // past square, or a phone's on-screen keyboard, flips the aspect too, and re-fitting there throws away the user's
+    // zoom. `screen.orientation` reports the real thing. Its event can arrive before the new layout, so the fit waits
+    // for the resize that follows, with a timer in case none does.
+    let turned = false;
+    const refit = (): void => {
+      if (!turned) return;
+      turned = false;
+      this.fitView();
+    };
+    (screen.orientation as ScreenOrientation | undefined)?.addEventListener('change', () => {
+      turned = true;
+      setTimeout(refit, 300);
+    });
     new ResizeObserver(() => {
-      const portrait = canvas.clientHeight >= canvas.clientWidth;
-      if (wasPortrait !== undefined && portrait !== wasPortrait) this.fitView();
+      if (turned) refit();
       else this.renderer.resize();
-      wasPortrait = portrait;
     }).observe(canvas);
   }
 
@@ -281,7 +289,8 @@ export class App {
       const prev = pointers.get(e.pointerId);
       if (!prev) return;
       if (e.pointerType === 'mouse' && e.buttons === 0) {
-        pointers.delete(e.pointerId); // the release was missed (it went to a native menu, or happened off-window)
+        // The release was missed: a right-click during a left-drag opens a native menu that swallows the pointerup.
+        pointers.delete(e.pointerId);
         return;
       }
       const now = at(e);

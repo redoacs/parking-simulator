@@ -19,8 +19,9 @@ function button(label: string, name: string, className = ''): HTMLButtonElement 
 
 /**
  * A tap that works while another finger is down. Browsers synthesise `click` only for a single-finger tap, so a second
- * thumb tapping Zoom while the first holds a steering button would do nothing. Pointer input acts on pointerdown;
- * `click` is kept for keyboard activation, which reports `detail === 0`.
+ * thumb tapping Zoom while the first holds a steering button would do nothing. Pointer input acts on pointerdown, so
+ * sliding off no longer cancels a press; `click` is kept for Enter, which reports `detail === 0`. (Space is the drive
+ * keys' stop and never reaches a button.)
  */
 function onTap(b: HTMLButtonElement, action: () => void): void {
   b.addEventListener('pointerdown', (e) => {
@@ -29,6 +30,11 @@ function onTap(b: HTMLButtonElement, action: () => void): void {
   });
   b.addEventListener('click', (e) => {
     if (e.detail === 0) action();
+  });
+  // The browser focuses a button on mousedown, which comes after pointerdown (after the finger lifts, for touch) and
+  // would pull focus back out of the sheet that the action just moved it into.
+  b.addEventListener('mousedown', (e) => {
+    e.preventDefault();
   });
 }
 

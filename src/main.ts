@@ -124,7 +124,7 @@ async function main(): Promise<void> {
     setSheet(false);
   });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') setSheet(false);
+    if (e.key === 'Escape' && !(e.target instanceof HTMLSelectElement)) setSheet(false); // a select uses Escape to shut its own list
   });
   window.addEventListener('hashchange', () => {
     const h = decodeHash(location.hash);

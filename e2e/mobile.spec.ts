@@ -148,8 +148,16 @@ test.describe('phone layout', () => {
 
   test('turning the phone re-fits the scene between the thumb columns', async ({ page }) => {
     await boot(page);
-    await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(400);
+    // A real rotation: the screen's orientation changes, not just the viewport's size.
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setDeviceMetricsOverride', {
+      width: 844,
+      height: 390,
+      deviceScaleFactor: 3,
+      mobile: true,
+      screenOrientation: { type: 'landscapePrimary', angle: 90 },
+    });
+    await page.waitForTimeout(700);
     const leftEdge = (await page.locator('#overlay .thumb.left').boundingBox())!;
     const rightEdge = (await page.locator('#overlay .thumb.right').boundingBox())!;
     // Default parallel scene, after its quarter turn: bounds run from y = -9 to y = 19.2 (the street frame's x range:
@@ -169,6 +177,49 @@ test.describe('phone layout', () => {
     expect(pts.bottom.y - pts.top.y).toBeGreaterThan(0.8 * 390);
     expect(pts.car.x).toBeGreaterThan(leftEdge.x + leftEdge.width);
     expect(pts.car.x).toBeLessThan(rightEdge.x);
+  });
+
+  test('resizes that are not a rotation keep the zoom: an on-screen keyboard, a browser bar', async ({ page }) => {
+    await boot(page);
+    const span = (): Promise<number> =>
+      page.evaluate(() => {
+        const p = window.__sim!.worldToCss(0, 0);
+        const q = window.__sim!.worldToCss(0, 1);
+        return Math.hypot(q.x - p.x, q.y - p.y);
+      });
+    await page.getByRole('button', { name: 'Zoom in' }).tap();
+    await page.getByRole('button', { name: 'Zoom in' }).tap();
+    const zoomed = await span();
+    // Android resizes the layout viewport for the keyboard; at 390 wide that makes the canvas wider than tall, which an
+    // aspect test would mistake for a rotation, twice. The screen itself stays portrait, so say so explicitly: Playwright's
+    // own setViewportSize would derive a landscape screen from these numbers, which no keyboard does.
+    const cdp = await page.context().newCDPSession(page);
+    const resize = async (height: number): Promise<void> => {
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width: 390,
+        height,
+        deviceScaleFactor: 3,
+        mobile: true,
+        screenOrientation: { type: 'portraitPrimary', angle: 0 },
+      });
+      await page.waitForTimeout(500);
+    };
+    await resize(360);
+    expect(await page.evaluate(() => document.getElementById('gpu')!.clientHeight)).toBe(360); // the resize really happened
+    expect(await span()).toBeCloseTo(zoomed, 6);
+    await resize(780);
+    expect(await span()).toBeCloseTo(zoomed, 6);
+  });
+
+  test('opening the sheet by tap moves focus into it', async ({ page }) => {
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).tap();
+    await expect(page.locator('#panel')).toBeInViewport();
+    // The browser focuses a tapped button after our pointerdown; left alone, that pulls focus back out of the sheet and
+    // the next Tab leaves the page.
+    expect(await page.evaluate(() => document.activeElement?.id)).toBe('panel');
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('SELECT');
   });
 
   test('the scene is fitted clear of the thumb controls', async ({ page }) => {
