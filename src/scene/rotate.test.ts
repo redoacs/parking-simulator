@@ -4,6 +4,8 @@ import { rotateScene } from './rotate';
 import type { Scene } from './types';
 
 const scene: Scene = {
+  parkingHeadings: [0, Math.PI],
+  drivingArea: [{ minX: -2, minY: -1, maxX: 10, maxY: 6 }],
   bounds: { minX: -2, minY: -1, maxX: 10, maxY: 6 },
   obstacles: [
     { kind: 'car', height: 1.6, polygon: rect(6, 0, 10, 2) },
@@ -16,6 +18,8 @@ const scene: Scene = {
 describe('rotateScene', () => {
   it('a quarter turn counter-clockwise sends +x to +y and keeps the right side on the right', () => {
     const r = rotateScene(scene, 1);
+    expect(r.parkingHeadings).toEqual([Math.PI / 2, (3 * Math.PI) / 2]);
+    expect(r.drivingArea).toEqual([{ minX: -6, minY: -2, maxX: 1, maxY: 10 }]);
     expect(r.start).toEqual({ x: -4, y: 6.8, theta: Math.PI / 2, steer: 0.1, speed: 0 });
     // The kerb was on the car's right (-y while heading +x); heading +y, the right is +x.
     const kerb = boundsOf([r.obstacles[1]!.polygon]);
@@ -50,6 +54,7 @@ describe('rotateScene', () => {
     let r = scene;
     for (let i = 0; i < 4; i++) r = rotateScene(r, 1);
     expect(r.target).toEqual(scene.target);
+    expect(r.drivingArea).toEqual(scene.drivingArea);
     expect(r.obstacles.map((o) => o.polygon)).toEqual(scene.obstacles.map((o) => o.polygon));
     expect(r.bounds).toEqual(scene.bounds);
     expect(r.start.x).toBe(scene.start.x);

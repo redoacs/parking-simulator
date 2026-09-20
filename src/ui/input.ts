@@ -99,6 +99,15 @@ export class DriveInput {
     button.addEventListener('blur', () => this.setKey(key, false, enter));
   }
 
+  clear(): void {
+    this.down.clear();
+    this.resetPending = false;
+    this.fitPending = false;
+  }
+  get stopHeld(): boolean {
+    return this.down.has('stop');
+  }
+
   get rewindHeld(): boolean {
     return this.down.has('rewind');
   }

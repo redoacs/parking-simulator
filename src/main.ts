@@ -1,3 +1,5 @@
+import { ManeuverClient } from './maneuver/client';
+import { createManeuverUI } from './ui/maneuver';
 import { getLanguage, initLanguage, LANGUAGE_TAGS, onLanguageChange, t } from './i18n';
 import taos from './vehicle/data/taos-trendline-mx-2025.json';
 import { validateVehicleSpec } from './vehicle/validate';
@@ -82,6 +84,7 @@ async function main(): Promise<void> {
   const hud = document.getElementById('hud')!;
   const initial: HashState = decodeHash(location.hash) ?? { presetId: PRESETS[0]!.id, params: defaultParams(PRESETS[0]!), mirrors: true };
   const applyScenario = (h: HashState): void => {
+    maneuverClient.cancel();
     app.setPreset(h.presetId, h.params);
     app.setMirrors(h.mirrors);
     history.replaceState(null, '', '#' + encodeHash(h));
@@ -91,6 +94,7 @@ async function main(): Promise<void> {
     initial,
     onScenario: applyScenario,
     onMirrors: (on) => {
+      maneuverClient.cancel();
       app.setMirrors(on);
       const s = app.snapshot();
       history.replaceState(null, '', '#' + encodeHash({ presetId: s.presetId, params: s.params, mirrors: on }));
@@ -102,7 +106,36 @@ async function main(): Promise<void> {
     bind: (b, k) => app.input.bind(b, k),
   });
   const readouts = createReadouts(hud, panel.readoutSection);
-  app.onSnapshot = readouts.update;
+  const maneuverClient = new ManeuverClient((state) => {
+    const hadPreview = !!app.snapshot().maneuver;
+    app.showManeuver(state.status === 'ready' ? state.maneuver : null);
+    document.body.classList.toggle('maneuver-active', state.status === 'ready');
+    maneuverUI.setState(state, app.snapshot().mirrors);
+    maneuverUI.update(app.snapshot().maneuver);
+    if (state.status === 'ready') {
+      setSheet(false);
+      app.fitView();
+      maneuverUI.focusPlay();
+    } else if (hadPreview) {
+      app.fitView();
+      maneuverUI.restoreFocus();
+    }
+  });
+  const maneuverUI = createManeuverUI({
+    show: () => {
+      const s = app.snapshot();
+      maneuverClient.request({ presetId: s.presetId, params: s.params, mirrors: s.mirrors, spec: vehicle.spec });
+    },
+    cancel: () => maneuverClient.cancel(),
+    toggle: () => app.toggleManeuver(),
+    next: () => app.stepManeuver(),
+  });
+  panelRoot.insertBefore(maneuverUI.section, panel.readoutSection);
+  document.getElementById('stage')!.append(maneuverUI.bar);
+  app.onSnapshot = (s) => {
+    readouts.update(s);
+    maneuverUI.update(s.maneuver);
+  };
   // Compact layout: the panel is a sheet over the scene. The class does nothing in the wide layout.
   const setSheet = (open: boolean): void => {
     const wasOpen = document.body.classList.contains('sheet-open');
@@ -124,8 +157,21 @@ async function main(): Promise<void> {
       setSheet(!document.body.classList.contains('sheet-open'));
     },
   });
-  app.viewInsets = () => overlay.freeAreas();
+  app.viewInsets = () => {
+    if (!app.snapshot().maneuver) return overlay.freeAreas();
+    const canvasRect = canvas.getBoundingClientRect(),
+      menu = document.querySelector('#overlay .menu')!.getBoundingClientRect();
+    return [
+      {
+        top: Math.max(12, menu.bottom - canvasRect.top + 8),
+        left: 12,
+        right: 12,
+        bottom: canvasRect.bottom - maneuverUI.bar.getBoundingClientRect().top + 12,
+      },
+    ];
+  };
   onLanguageChange(() => {
+    maneuverUI.refreshText();
     panel.refreshText();
     overlay.refreshText();
     readouts.refreshText();

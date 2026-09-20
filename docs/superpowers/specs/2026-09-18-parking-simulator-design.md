@@ -15,7 +15,7 @@ path. First vehicle: Volkswagen Taos Trendline, Mexico, model year 2025
 
 | Topic | Decision |
 |---|---|
-| Interaction | Manual real-time driving with swept-path recording; data model planner-ready |
+| Interaction | Manual driving with swept-path recording and a separate suggested-maneuver demonstration |
 | View | Top-down orthographic plan view; 3D-capable data model (x, y, z + heights) |
 | GPU stack | Raw WebGL2 + GLSL, no rendering library. (WebGPU + WGSL until v1.2; replaced for phone support, see the v1.2 spec.) |
 | Geometry | Analytic on CPU (exact); all pixels on GPU; swept envelope accumulated in a GPU texture |
@@ -35,6 +35,7 @@ src/
   ui/        panel, readouts, text bindings, input bindings      (browser)
   i18n/      EN/ES catalogs, language preferences, number formatting
   scene/     Scene type + parametric preset generators            (pure)
+  maneuver/  bounded search, replay validation, worker and ghost playback
   app.ts     fixed-step loop, history, clearance, render coordination
   main.ts    startup and UI wiring
 ```
@@ -44,8 +45,9 @@ simulation, clearance, and rendering. The geometry, vehicle, scene, and simulati
 modules have no browser dependency and are tested in Node.
 
 `sim` consumes a `ControlInput { steer: number; speed: number }` per step from
-any source. The keyboard is one source; a future planner is another. No planner
-code in v1.
+any source. The keyboard drives the user's car; the suggested-maneuver worker
+produces controls and validates their replay for a separate ghost. The
+[maneuver design](2026-09-20-suggested-maneuver-design.md) owns that contract.
 
 ## 2. Data model
 
@@ -103,10 +105,11 @@ centre.
 
 ```ts
 interface Obstacle { polygon: Vec2[]; height: number; kind: 'wall' | 'kerb' | 'car' | 'line' }
-interface Scene { bounds: Rect; obstacles: Obstacle[]; target: Vec2[]; start: VehicleState }
+interface Scene { bounds: Rect; drivingArea: Rect[]; parkingHeadings: number[]; obstacles: Obstacle[]; target: Vec2[]; start: VehicleState }
 ```
 
-`kind: 'line'` obstacles (painted lines) are drawn but not collided with.
+`kind: 'line'` obstacles (painted lines) are drawn but not collided with in manual driving.
+`drivingArea` and `parkingHeadings` constrain suggested maneuvers only.
 Presets are functions `(params) → Scene`; the UI and the rest of the app only
 see `Scene`, so a later drawing editor emits the same type.
 
@@ -216,6 +219,7 @@ Left panel:
 - Language selector (English / Español).
 - Preset selector + its numeric inputs (live; changing a value rebuilds the
   scene and resets the car).
+- Suggested maneuver: local search, route, independent ghost playback and instructions in both languages.
 - Vehicle card: name, each dimension with a link to its source, "unverified"
   badge where applicable, mirrors toggle.
 - Readouts: min clearance in cm (green ≥ 30, amber 10–30, red < 10, "CONTACT"
@@ -279,14 +283,14 @@ path). Also used during development to verify visually.
 - GitHub Actions on push to `main` and on PRs: install (frozen lockfile),
   typecheck, lint, format check, unit tests, build, and required browser tests; on
   `main` deploy `dist/` only after both the check and browser jobs pass. Shared
-  smoke and language tests run on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
+  smoke, language and maneuver tests run on Chromium, Firefox, and WebKit; CDP phone tests run on Chromium.
   The deployment build sets `BASE_PATH=/parking-simulator/`; Vite defaults to `/`
   when that environment variable is absent.
 - Repository: `redoacs/parking-simulator`; publication uses GitHub Pages.
 
-## 10. Out of scope (v1)
+## 10. Out of scope
 
-Automatic planner, obstacle editor, 3D camera, vehicle
+Planning from the current driven pose, guaranteed optimal routes, obstacle editor, 3D camera, vehicle
 dynamics (slip, suspension, acceleration curves), multiple vehicles at once,
 simulation persistence beyond the URL hash, GPU text. Language preference is
 stored locally since the English/Spanish update.

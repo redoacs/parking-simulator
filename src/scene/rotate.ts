@@ -21,6 +21,15 @@ export function rotateScene(scene: Scene, quarterTurn: 1 | -1): Scene {
         { x: b.maxX, y: b.maxY },
       ]),
     ]),
+    parkingHeadings: scene.parkingHeadings.map((theta) => theta + (quarterTurn * Math.PI) / 2),
+    drivingArea: scene.drivingArea.map((r) =>
+      boundsOf([
+        poly([
+          { x: r.minX, y: r.minY },
+          { x: r.maxX, y: r.maxY },
+        ]),
+      ]),
+    ),
     obstacles: scene.obstacles.map((o) => ({ ...o, polygon: poly(o.polygon) })),
     target: poly(scene.target),
     start: { ...scene.start, ...turn(scene.start, quarterTurn), theta: scene.start.theta + (quarterTurn * Math.PI) / 2 },

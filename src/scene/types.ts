@@ -11,6 +11,10 @@ export interface Obstacle {
 
 export interface Scene {
   bounds: Rect;
+  /** Finite driving region for suggested maneuvers only. Union of axis-aligned rectangles. */
+  drivingArea: Rect[];
+  /** Allowed final headings for suggested maneuvers. */
+  parkingHeadings: number[];
   obstacles: Obstacle[];
   /** The spot: parked = body fully inside. Convex. */
   target: Polygon;

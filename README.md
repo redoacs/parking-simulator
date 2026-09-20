@@ -69,6 +69,39 @@ still takes red styling and is shown alongside the parked status.
 On a phone or tablet the scene fills the screen: steer with the left thumb (◀ ▶), drive with the right (▲ ▼), hold
 both to reverse while steering. One finger pans, two fingers pinch-zoom, ☰ opens the settings.
 
+## Suggested maneuver
+
+Choose a scenario, dimensions and mirror setting, then **Show maneuver**
+(**Mostrar maniobra**). The route starts at the scenario's preset position.
+Solid cyan marks forward travel and dashed pink marks reverse travel, measured
+at the rear axle. The purple car demonstrates the route: play/pause it or use
+**Next instruction** to advance one steering/direction segment. Space pauses;
+R restarts the demonstration. Closing it resumes your own car and its history.
+Your driving clock and swept envelope are paused during the demonstration.
+
+Instructions and metrics work in English and Spanish. Switching languages keeps
+the route and playback position. Changing scenario dimensions, mirrors or the
+scenario URL cancels the search and clears the route. Search runs locally in a
+worker; **Cancel search** keeps the rest of the simulator usable.
+
+This is a feasible suggestion, not a guaranteed optimum. The search favors
+shorter travel, fewer direction/steering changes and more clearance. It stays
+within the modeled lane, parking area, driveway and apron, including finite ends
+inside the fitted view. Removing the parallel kerb does not permit off-road
+travel. These planning limits do not prevent manual driving over painted lines.
+
+Clearance is a conservative lower bound along the whole demonstrated movement,
+against obstacles with the selected mirror setting. It is rounded down for
+display. Some suggestions pass close to another car; the same estimated vehicle
+dimensions described below affect these results. A failed search means **no
+maneuver was found within the search limit**, not that parking is impossible.
+The defaults and representative tight/spacious cases are tested; success at every
+slider combination is not guaranteed. Planning from your current driven pose is
+not included.
+
+See the [maneuver design](docs/superpowers/specs/2026-09-20-suggested-maneuver-design.md)
+for the solver, replay contract and search limits.
+
 ## Vehicle data
 
 Every dimension in `src/vehicle/data/*.json` carries its source URL and a required
@@ -83,6 +116,6 @@ and maneuvers the simulator reports.
 ## Verification
 
 CI requires typecheck, lint, formatting, unit tests, build, and browser tests
-before deployment. Shared smoke and language tests run on Chromium, Firefox, and WebKit;
+before deployment. Shared smoke, language and maneuver tests run on Chromium, Firefox, and WebKit;
 multi-touch and orientation emulation use Chromium's CDP interface. These are
 desktop engine checks and emulation, not qualification on a physical phone.

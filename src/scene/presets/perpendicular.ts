@@ -53,6 +53,11 @@ export const perpendicular: PresetDef = {
     return rotateScene(
       {
         bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 3, maxY: b.maxY + BOUNDS_PAD },
+        parkingHeadings: [Math.PI / 2, -Math.PI / 2],
+        drivingArea: [
+          { minX: rowX0 - BOUNDS_PAD, minY: -aisleWidth, maxX: rowX1 + BOUNDS_PAD + 3, maxY: 0 },
+          { minX: rowX0, minY: 0, maxX: rowX1, maxY: bayDepth },
+        ],
         obstacles,
         target,
         start,
