@@ -234,7 +234,8 @@ test('parked with mirror contact stays red and keeps final offsets', async ({ pa
 
 test('borrowed vehicle data carries its uncertainty', async ({ page }) => {
   await page.goto('/#p=garage');
-  await expect(page.locator('#panel')).toBeVisible();
+  await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden, null, { timeout: 20_000 });
+  await expect(page.locator('#fatal')).toBeHidden();
   for (const name of ['Track front', 'Track rear', 'Turning circle']) {
     const row = page.locator('#panel .readout', { hasText: name });
     await expect(row.locator('.unverified')).toHaveText('unverified');

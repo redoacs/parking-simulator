@@ -247,6 +247,7 @@ export class App {
     const last = this.history.last();
     this.simTime = last?.time ?? 0;
     this.state = { ...(last?.state ?? this.scene.start), speed: 0 };
+    // A mirror toggle while idle can stamp contact later than the restored clock without adding a history entry.
     if (
       this.firstContactPosition !== null &&
       (this.history.evicted + this.history.length < this.firstContactPosition ||
