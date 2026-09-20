@@ -54,6 +54,27 @@ describe('DriveInput.control', () => {
     expect(i.rewindHeld).toBe(true);
     expect(i.handleKey('KeyQ', true)).toBe(false); // unmapped → not handled
   });
+  it('releasing one keyboard alias leaves another held alias active', () => {
+    const i = new DriveInput();
+    i.handleKey('ArrowUp', true);
+    i.handleKey('KeyW', true);
+    i.handleKey('KeyW', false);
+    i.handleKey('KeyW', false); // an unmatched release must not cancel another source
+    expect(i.control(s, p).speed).toBe(2);
+    i.handleKey('ArrowUp', false);
+    expect(i.control(s, p).speed).toBe(0);
+  });
+  it('keeps independent pointer and programmatic sources until each is released', () => {
+    const i = new DriveInput();
+    i.setKey('forward', true, 'pointer:1');
+    i.setKey('forward', true, 'pointer:2');
+    i.setKey('forward', true);
+    i.setKey('forward', false, 'pointer:1');
+    i.setKey('forward', false);
+    expect(i.control(s, p).speed).toBe(2);
+    i.setKey('forward', false, 'pointer:2');
+    expect(i.control(s, p).speed).toBe(0);
+  });
   it('ignores modified combos so browser shortcuts still work', () => {
     expect(keyFromEvent({ code: 'KeyR' })).toBe('reset');
     expect(keyFromEvent({ code: 'KeyR', ctrlKey: true })).toBeUndefined();

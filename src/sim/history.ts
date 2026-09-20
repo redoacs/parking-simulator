@@ -1,8 +1,13 @@
 import type { VehicleState } from './model';
 
-const STRIDE = 5;
+const STRIDE = 6;
 
-/** Fixed-capacity ring buffer of VehicleState, oldest dropped first. */
+export interface HistoryEntry {
+  state: VehicleState;
+  time: number;
+}
+
+/** Fixed-capacity ring buffer of timestamped activity, oldest dropped first. */
 export class StateHistory {
   private readonly buf: Float64Array;
   private start = 0;
@@ -22,9 +27,9 @@ export class StateHistory {
     return this.dropped;
   }
 
-  push(s: VehicleState): void {
+  push(s: VehicleState, time: number): void {
     const idx = (this.start + this.count) % this.capacity;
-    this.write(idx, s);
+    this.write(idx, s, time);
     if (this.count < this.capacity) this.count++;
     else {
       this.start = (this.start + 1) % this.capacity;
@@ -32,17 +37,17 @@ export class StateHistory {
     }
   }
 
-  pop(): VehicleState | undefined {
+  pop(): HistoryEntry | undefined {
     if (this.count === 0) return undefined;
     this.count--;
     return this.read((this.start + this.count) % this.capacity);
   }
 
-  last(): VehicleState | undefined {
+  last(): HistoryEntry | undefined {
     return this.count === 0 ? undefined : this.at(this.count - 1);
   }
 
-  at(i: number): VehicleState {
+  at(i: number): HistoryEntry {
     if (i < 0 || i >= this.count) throw new RangeError(`history index ${i} out of range`);
     return this.read((this.start + i) % this.capacity);
   }
@@ -53,21 +58,25 @@ export class StateHistory {
     this.dropped = 0;
   }
 
-  forEach(fn: (s: VehicleState, i: number) => void): void {
+  forEach(fn: (entry: HistoryEntry, i: number) => void): void {
     for (let i = 0; i < this.count; i++) fn(this.at(i), i);
   }
 
-  private write(idx: number, s: VehicleState): void {
+  private write(idx: number, s: VehicleState, time: number): void {
     const o = idx * STRIDE;
     this.buf[o] = s.x;
     this.buf[o + 1] = s.y;
     this.buf[o + 2] = s.theta;
     this.buf[o + 3] = s.steer;
     this.buf[o + 4] = s.speed;
+    this.buf[o + 5] = time;
   }
 
-  private read(idx: number): VehicleState {
+  private read(idx: number): HistoryEntry {
     const o = idx * STRIDE;
-    return { x: this.buf[o]!, y: this.buf[o + 1]!, theta: this.buf[o + 2]!, steer: this.buf[o + 3]!, speed: this.buf[o + 4]! };
+    return {
+      state: { x: this.buf[o]!, y: this.buf[o + 1]!, theta: this.buf[o + 2]!, steer: this.buf[o + 3]!, speed: this.buf[o + 4]! },
+      time: this.buf[o + 5]!,
+    };
   }
 }

@@ -29,15 +29,10 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
-function citedRow(label: string, c: Cited<number>): HTMLElement {
+function citedRow(label: string, c: Cited<unknown>, valueText: string): HTMLElement {
   const link = el('a', { href: c.source.url, target: '_blank', rel: 'noopener', class: 'source', title: c.source.note ?? '' }, 'src');
   const badge = isUnverified(c) ? el('span', { class: 'unverified' }, 'unverified') : '';
-  return el(
-    'div',
-    { class: 'readout' },
-    el('span', {}, label, badge),
-    el('span', { class: 'value' }, `${(c.value * 1000).toFixed(0)} mm `, link),
-  );
+  return el('div', { class: 'readout' }, el('span', {}, label, badge), el('span', { class: 'value' }, `${valueText} `, link));
 }
 
 export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h: HashState): void; readoutSection: HTMLElement } {
@@ -45,7 +40,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   let params: Params = { ...o.initial.params };
   let mirrors = o.initial.mirrors;
 
-  const presetSelect = el('select');
+  const presetSelect = el('select', { 'aria-label': 'Scenario preset' });
   for (const p of PRESETS) presetSelect.append(el('option', { value: p.id }, p.name));
   const paramsBox = el('div');
   const scenario = el('fieldset', {}, el('legend', {}, 'Scenario'), presetSelect, paramsBox);
@@ -118,18 +113,8 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     'fieldset',
     {},
     el('legend', {}, `${d.name} · ${d.market} ${d.modelYear}`),
-    ...NUMERIC_FIELDS.map((f) => citedRow(labels[f], d[f])),
-    el(
-      'div',
-      { class: 'readout' },
-      el('span', {}, `Turning circle (${d.turningCircle.value.kind})`),
-      el(
-        'span',
-        { class: 'value' },
-        `${d.turningCircle.value.diameter.toFixed(2)} m `,
-        el('a', { href: d.turningCircle.source.url, target: '_blank', rel: 'noopener', class: 'source' }, 'src'),
-      ),
-    ),
+    ...NUMERIC_FIELDS.map((f) => citedRow(labels[f], d[f], `${(d[f].value * 1000).toFixed(0)} mm`)),
+    citedRow(`Turning circle (${d.turningCircle.value.kind})`, d.turningCircle, `${d.turningCircle.value.diameter.toFixed(2)} m`),
     el(
       'div',
       { class: 'readout' },
@@ -153,16 +138,16 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
   const zoomInBtn = el('button', { type: 'button' }, 'Zoom +');
   zoomInBtn.addEventListener('click', () => o.onZoom(1.25));
   const pad = el('div', { class: 'pad wide-only' });
-  const padKeys: [string, DriveKey][] = [
-    ['◀', 'left'],
-    ['▲', 'forward'],
-    ['▶', 'right'],
-    ['⟲ rewind', 'rewind'],
-    ['▼', 'reverse'],
-    ['centre', 'centre'],
+  const padKeys: [string, DriveKey, string][] = [
+    ['◀', 'left', 'Steer left'],
+    ['▲', 'forward', 'Forward'],
+    ['▶', 'right', 'Steer right'],
+    ['⟲ rewind', 'rewind', 'Rewind'],
+    ['▼', 'reverse', 'Reverse'],
+    ['centre', 'centre', 'Centre steering'],
   ];
-  for (const [label, key] of padKeys) {
-    const b = el('button', { type: 'button' }, label);
+  for (const [label, key, name] of padKeys) {
+    const b = el('button', { type: 'button', 'aria-label': name }, label);
     o.bind(b, key);
     pad.append(b);
   }
@@ -176,7 +161,7 @@ export function buildPanel(root: HTMLElement, o: PanelOptions): { setScenario(h:
     el(
       'p',
       { class: 'source keys-hint' },
-      'Keys: arrows/WASD drive · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
+      'Keys: arrows/WASD drive · Tab to a drive button, hold Enter · C centre steering · Space stop · Z rewind · R reset · F fit · drag to pan · wheel or Zoom buttons to zoom',
     ),
   );
 
