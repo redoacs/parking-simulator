@@ -23,7 +23,7 @@ export const es = {
   'maneuver.step': ({ step, total }: { step: string; total: string }) => `Paso ${step} de ${total}`,
   'maneuver.move': ({ direction, distance }: { direction: string; distance: string }) => `${direction} ${distance} m.`,
   'maneuver.metrics': ({ distance, changes, clearance }: { distance: string; changes: string; clearance: string }) =>
-    `${distance} m · ${changes} cambios de sentido · distancia mínima ≥ ${clearance} cm`,
+    `${distance} m · cambios de sentido: ${changes} · distancia mínima ≥ ${clearance} cm.`,
   'maneuver.mirrorsOn': 'La distancia incluye los espejos.',
   'maneuver.mirrorsOff': 'La distancia excluye los espejos.',
   'app.title': 'Simulador de estacionamiento',

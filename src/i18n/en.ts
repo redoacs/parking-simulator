@@ -23,7 +23,7 @@ export const en = {
   'maneuver.step': ({ step, total }: { step: string; total: string }) => `Step ${step} of ${total}`,
   'maneuver.move': ({ direction, distance }: { direction: string; distance: string }) => `${direction} ${distance} m.`,
   'maneuver.metrics': ({ distance, changes, clearance }: { distance: string; changes: string; clearance: string }) =>
-    `${distance} m · ${changes} direction changes · clearance ≥ ${clearance} cm`,
+    `${distance} m · direction changes: ${changes} · clearance ≥ ${clearance} cm.`,
   'maneuver.mirrorsOn': 'Clearance includes mirrors.',
   'maneuver.mirrorsOff': 'Clearance excludes mirrors.',
   'app.title': 'Parking Simulator',
