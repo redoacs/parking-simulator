@@ -315,6 +315,17 @@ button[aria-disabled='true'] {
 .maneuver-bar .source {
   margin-bottom: 0;
 }
+.maneuver-outcome strong,
+.maneuver-outcome .source {
+  display: block;
+}
+.maneuver-outcome strong {
+  font-size: 16px;
+}
+.maneuver-approach {
+  display: none;
+  font-size: 11px;
+}
 .maneuver-active #overlay .thumb {
   display: none;
 }
@@ -326,8 +337,20 @@ button[aria-disabled='true'] {
     min-height: 44px;
     flex: 1 1 auto;
   }
+  .maneuver-approach {
+    display: block;
+  }
   .maneuver-bar {
     left: calc(8px + env(safe-area-inset-left));
     right: calc(8px + env(safe-area-inset-right));
+  }
+}
+@media (max-width: 480px) {
+  .maneuver-bar .maneuver-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .maneuver-bar button:first-child {
+    grid-column: 1 / -1;
   }
 }

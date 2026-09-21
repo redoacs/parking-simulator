@@ -5,7 +5,7 @@ import { isCollidable, type Scene } from '../scene/types';
 import { SIM_DT, simParamsFor, stepVehicle, type VehicleState } from '../sim/model';
 import { collisionOutline, type DerivedVehicle } from '../vehicle/derive';
 import { drivingDomain, rectPolygon } from './domain';
-import { isManeuverGoal } from './goal';
+import { isManeuverGoal, parkedQuality } from './goal';
 import { CLEARANCE_FLOOR, MAX_REPLAY_STEPS, type Command, type Maneuver } from './types';
 
 /** Replay actual controls. Search's approximate collision checker is not used here. */
@@ -83,5 +83,5 @@ export function validateManeuver(commands: Command[], scene: Scene, v: DerivedVe
     }
   }
   if (s.speed !== 0 || Math.abs(s.steer) > 1e-10 || !isManeuverGoal(s, scene, v)) return null;
-  return { commands, states, distance, directionChanges, clearance };
+  return { commands, states, distance, directionChanges, clearance, ...parkedQuality(s, scene, v, mirrors), placement: 'bestFound' };
 }

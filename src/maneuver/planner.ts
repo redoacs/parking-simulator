@@ -1,15 +1,17 @@
-import type { Pose } from '../geom/polygon';
+import { boundsOf } from '../geom/polygon';
+import { worldOutline } from '../geom/clearance';
 import type { Scene } from '../scene/types';
 import { SIM_DT, simParamsFor, stepVehicle, type VehicleState } from '../sim/model';
 import type { DerivedVehicle } from '../vehicle/derive';
 import { commandsFor } from './controls';
 import { domainFor } from './domain';
 import { dubins, type Leg } from './dubins';
-import { isManeuverGoal, targetGeometry } from './goal';
+import { compareParking, isManeuverGoal, parkedQuality, targetGeometry } from './goal';
 import { CLEARANCE_FLOOR, type Maneuver } from './types';
 import { validateManeuver } from './validate';
 
-export type PlanResult = { status: 'found'; maneuver: Maneuver; expanded: number } | { status: 'limit'; expanded: number };
+type SearchEnd = 'target' | 'time' | 'expansions' | 'nodes' | 'exhausted' | 'invalid';
+export type PlanResult = ({ status: 'found'; maneuver: Maneuver } | { status: 'limit' }) & { expanded: number; reason: SearchEnd };
 interface Node {
   s: VehicleState;
   g: number;
@@ -51,7 +53,7 @@ class Heap {
 const angle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const MAX_NODES = 250000;
 
-/** Bounded weighted Hybrid A*. Feasible suggestion only; discretization and heuristic do not guarantee an optimum. */
+/** Bounded weighted Hybrid A*: maximize final margin, then centering. No global route-optimality guarantee. */
 export function planManeuver(
   scene: Scene,
   v: DerivedVehicle,
@@ -64,26 +66,29 @@ export function planManeuver(
     sp = simParamsFor(v),
     target = targetGeometry(scene, v);
   const headings = scene.parkingHeadings;
-  const goals: Pose[] = [];
+  const goals: VehicleState[] = [];
+  // A moving tick needs a half-sweep allowance above the hard floor. Use the largest steering sweep
+  // so a constrained target remains approachable without a second, slower motion model.
+  const arrivalClearance = CLEARANCE_FLOOR + ((1 + (domain.radius * Math.abs(Math.tan(sp.maxSteer))) / sp.wheelbase) * SIM_DT) / 2 + 1e-5;
   for (const theta of headings) {
-    // A centred mirror can touch the kerb in a 2 m spot. Prefer the nearest valid lateral placement.
-    for (let i = 0; i <= 30; i++) {
-      const shift = (i % 2 === 0 ? -1 : 1) * Math.ceil(i / 2) * 0.01;
-      const s = {
-        x: target.x - target.bodyOffset * Math.cos(theta) - shift * Math.sin(target.theta),
-        y: target.y - target.bodyOffset * Math.sin(theta) + shift * Math.cos(target.theta),
-        theta,
-        steer: 0,
-        speed: 0,
-      };
-      if (isManeuverGoal(s, scene, v) && domain.clearance(s) >= CLEARANCE_FLOOR) {
-        goals.push(s);
-        break;
-      }
-    }
+    const s = {
+      x: target.x - target.bodyOffset * Math.cos(theta),
+      y: target.y - target.bodyOffset * Math.sin(theta),
+      theta,
+      steer: 0,
+      speed: 0,
+    };
+    // In narrow parallel spaces the kerb-side domain edge prevents centering, even with the kerb off.
+    // Project onto the outer domain's feasible center interval instead of rounding a lateral grid.
+    const b = boundsOf(worldOutline(v, s, mirrors));
+    s.x += Math.max(domain.outer.minX + arrivalClearance - b.minX, Math.min(0, domain.outer.maxX - arrivalClearance - b.maxX));
+    s.y += Math.max(domain.outer.minY + arrivalClearance - b.minY, Math.min(0, domain.outer.maxY - arrivalClearance - b.maxY));
+    if (isManeuverGoal(s, scene, v) && domain.clearance(s) >= arrivalClearance - 1e-10) goals.push(s);
   }
   let expanded = 0;
-  if (!goals.length || domain.clearance(scene.start) < CLEARANCE_FLOOR) return { status: 'limit', expanded };
+  if (!goals.length || domain.clearance(scene.start) < CLEARANCE_FLOOR) return { status: 'limit', expanded, reason: 'invalid' };
+  goals.sort((a, b) => compareParking(parkedQuality(a, scene, v, mirrors), parkedQuality(b, scene, v, mirrors)));
+  const targetQuality = parkedQuality(goals[0]!, scene, v, mirrors);
   const h = (s: VehicleState) => Math.min(...goals.map((t) => Math.hypot(s.x - t.x, s.y - t.y) + 3 * Math.abs(angle(s.theta - t.theta))));
   const isGoal = (s: VehicleState) => isManeuverGoal(s, scene, v);
   const key = (s: VehicleState, gear: number) =>
@@ -121,33 +126,55 @@ export function planManeuver(
     Math.abs(leg.distance) * (1 + (3 * Math.max(0, 0.3 - gap)) / 0.3) +
     (n.gear && n.gear !== Math.sign(leg.distance) ? 6 : 0) +
     (Math.abs(n.s.steer - leg.steer) > 0.001 ? 1 : 0);
-  const finish = (n: Node): PlanResult | null => {
+  const finish = (n: Node): Maneuver | null => {
     const legs: Leg[] = [];
     let at: Node | null = n;
     while (at?.leg) {
       legs.unshift(at.leg);
       at = at.parent;
     }
-    const maneuver = validateManeuver(commandsFor(legs, scene.start.steer, sp), scene, v, mirrors);
-    return maneuver ? { status: 'found', maneuver, expanded } : null;
+    return validateManeuver(commandsFor(legs, scene.start.steer, sp), scene, v, mirrors);
   };
-  const candidate: { node: Node | null; finishAfter: number } = { node: null, finishAfter: Infinity };
+  const candidate: { maneuver: Maneuver | null; cost: number } = {
+    maneuver: null,
+    cost: Infinity,
+  };
+  const aligned = (m: Maneuver) => headings.some((theta) => Math.abs(angle(m.states.at(-1)!.theta - theta)) <= 1e-6);
+  const reachesTarget = (m: Maneuver) =>
+    aligned(m) && m.parkedMargin >= targetQuality.parkedMargin - 1e-6 && m.centerOffset <= targetQuality.centerOffset + 1e-6;
+  const atTarget = () => candidate.maneuver !== null && reachesTarget(candidate.maneuver);
   const consider = (n: Node) => {
-    if (!candidate.node || n.g < candidate.node.g) candidate.node = n;
-    candidate.finishAfter = Math.min(candidate.finishAfter, expanded + 3000);
+    const quality = parkedQuality(n.s, scene, v, mirrors);
+    const order = candidate.maneuver ? compareParking(quality, candidate.maneuver) : -1;
+    if (order > 0 || (order === 0 && n.g >= candidate.cost)) return;
+    const maneuver = finish(n);
+    if (!maneuver) return;
+    const replayOrder = candidate.maneuver ? compareParking(maneuver, candidate.maneuver) : -1;
+    if (replayOrder > 0 || (replayOrder === 0 && n.g >= candidate.cost)) return;
+    maneuver.placement =
+      maneuver.centerOffset <= 0.001 && aligned(maneuver) ? 'centered' : reachesTarget(maneuver) ? 'adjusted' : 'bestFound';
+    candidate.maneuver = maneuver;
+    candidate.cost = n.g;
   };
-  while (open.nodes.length && expanded < maxExpansions && generated < MAX_NODES && expanded < candidate.finishAfter) {
-    if (performance.now() - started >= maxMilliseconds) break;
+  let reason: SearchEnd = 'exhausted';
+  while (open.nodes.length && expanded < maxExpansions && generated < MAX_NODES) {
+    if (performance.now() - started >= maxMilliseconds) {
+      reason = 'time';
+      break;
+    }
     const n = open.pop();
     if ((visited.get(key(n.s, n.gear)) ?? Infinity) < n.g) continue;
     expanded++;
     if (isGoal(n.s)) consider(n);
-    if (expanded === 1 || expanded % 8 === 0) {
+    if (atTarget()) break;
+    // Try every nearby pose: sampling only each eighth pop can miss the sole usable connection
+    // when tiny floating-point differences change heap order between browser engines.
+    const nearGoal = goals.some((goal) => Math.hypot(n.s.x - goal.x, n.s.y - goal.y) <= v.dims.length);
+    if (expanded === 1 || expanded % 8 === 0 || nearGoal) {
       const shots = goals.flatMap((goal) =>
         ([1, -1] as const).flatMap((gear) => dubins(n.s, goal, sp.wheelbase / Math.tan(sp.maxSteer), sp.maxSteer, gear)),
       );
       shots.sort((a, b) => a.reduce((v, l) => v + Math.abs(l.distance), 0) - b.reduce((v, l) => v + Math.abs(l.distance), 0));
-      let chosen: Node | null = null;
       for (const shot of shots) {
         if (shot.reduce((v, l) => v + Math.abs(l.distance), 0) > 25) continue;
         let at = n;
@@ -160,10 +187,11 @@ export function planManeuver(
           }
           at = { s: result.s, leg, g: at.g + cost(at, leg, result.gap), f: 0, parent: at, gear: Math.sign(leg.distance) };
         }
-        if (ok && isGoal(at.s) && (!chosen || at.g < chosen.g)) chosen = at;
+        if (ok && isGoal(at.s)) consider(at);
+        if (atTarget()) break;
       }
-      if (chosen) consider(chosen);
     }
+    if (atTarget()) break;
     for (const gear of [1, -1])
       for (const fraction of [-1, 0, 1])
         for (const length of [0.35, 1.4]) {
@@ -180,5 +208,8 @@ export function planManeuver(
           open.push({ s, g, f: g + 2.5 * h(s), parent: n, leg, gear });
         }
   }
-  return (candidate.node ? finish(candidate.node) : null) ?? { status: 'limit', expanded };
+  if (atTarget()) reason = 'target';
+  else if (expanded >= maxExpansions) reason = 'expansions';
+  else if (generated >= MAX_NODES) reason = 'nodes';
+  return candidate.maneuver ? { status: 'found', maneuver: candidate.maneuver, expanded, reason } : { status: 'limit', expanded, reason };
 }

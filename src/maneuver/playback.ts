@@ -19,6 +19,9 @@ export interface ManeuverSnapshot {
   distance: number;
   directionChanges: number;
   clearance: number;
+  parkedMargin: number;
+  centerOffset: number;
+  placement: Maneuver['placement'];
 }
 export class ManeuverPlayback {
   readonly steps: ManeuverStep[] = [];
@@ -77,6 +80,9 @@ export class ManeuverPlayback {
       distance: this.plan.distance,
       directionChanges: this.plan.directionChanges,
       clearance: this.plan.clearance,
+      parkedMargin: this.plan.parkedMargin,
+      centerOffset: this.plan.centerOffset,
+      placement: this.plan.placement,
     };
   }
 }

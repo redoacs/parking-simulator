@@ -13,6 +13,9 @@ const plan: Maneuver = {
   distance: 0.04,
   directionChanges: 1,
   clearance: 0.1,
+  parkedMargin: 0.2,
+  centerOffset: 0,
+  placement: 'centered',
 };
 it('groups settling and fractional motion into one instruction, and steps without playing', () => {
   const p = new ManeuverPlayback(plan);

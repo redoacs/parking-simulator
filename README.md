@@ -88,20 +88,33 @@ the route and playback position. Changing scenario dimensions, mirrors or the
 scenario URL cancels the search and clears the route. Search runs locally in a
 worker; **Cancel search** keeps the rest of the simulator usable.
 
-This is a feasible suggestion, not a guaranteed optimum. The search favors
-shorter travel, fewer direction/steering changes and more clearance. It stays
+The search prioritizes the final parked margin, then centering. It aims for an
+aligned, centered finish; a bounded search can return its best validated
+off-center finish instead. Route length and gear changes do not outrank final
+placement, and the route itself is not guaranteed shortest or simplest. It stays
 within the modeled lane, parking area, driveway and apron, including finite ends
 inside the fitted view. Removing the parallel kerb does not permit off-road
 travel. These planning limits do not prevent manual driving over painted lines.
 
-Clearance is a conservative lower bound along the whole demonstrated movement,
-against obstacles with the selected mirror setting. It is rounded down for
-display. Some suggestions pass close to another car; the same estimated vehicle
+**Parked margin** is the smallest final gap to any space edge or solid obstacle,
+including mirrors when enabled. It appears in the playback bar. Negative values
+mean the enabled footprint extends over a space edge; painted edges remain
+noncollidable. Narrow parallel spaces may require an off-center finish to stay
+clear of the kerb-side planning boundary, even with the kerb turned off; a
+shallow perpendicular bay may need a small adjustment away from its back wall.
+The demonstration distinguishes a centered finish, a position adjusted for
+boundary clearance, and an off-center fallback found before search ends.
+**Approach clearance** is a conservative lower bound along
+the whole movement against solid obstacles. Both are rounded down for display;
+only the parked metric includes space edges. Some suggestions pass close to
+another car; the same estimated vehicle
 dimensions described below affect these results. A failed search means **no
 maneuver was found within the search limit**, not that parking is impossible.
 The defaults and representative tight/spacious cases are tested; success at every
 slider combination is not guaranteed. Planning from your current driven pose is
 not included.
+The tested 5.5 m × 2.3 m parallel space with a 3 m lane still returns an
+off-center fallback; the 5 m × 2 m space with a 2.5 m lane can return no route.
 
 See the [maneuver design](docs/superpowers/specs/2026-09-20-suggested-maneuver-design.md)
 for the solver, replay contract and search limits.

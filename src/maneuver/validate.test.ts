@@ -38,6 +38,8 @@ describe('authoritative control replay', () => {
     const sampled = Math.min(...plan.states.map((s) => checkClearance(worldOutline(v, s, true), scene)!.distance));
     expect(plan.clearance).toBeLessThan(sampled);
     expect(plan.clearance).toBeCloseTo(sampled - SIM_DT / 2, 9);
+    expect(plan.parkedMargin).toBeCloseTo((3 - v.dims.widthMirrors) / 2, 10);
+    expect(plan.centerOffset).toBeLessThan(1e-10);
   });
   it('replays intervening ticks instead of checking only segment endpoints', () => {
     const scene = { ...open, target: rect(offset + 8 - 2.4, -1.1, offset + 8 + 2.4, 1.1) };
