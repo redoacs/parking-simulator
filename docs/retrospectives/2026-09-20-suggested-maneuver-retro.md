@@ -29,7 +29,7 @@ The useful design corrections were concrete:
 - The motion proof uses an arclength bound and both endpoints, not half a vertex
   chord plus an unexplained allowance. The validator also enforces permitted
   headings, centring and settled steering before motion.
-- Prototype exact replay took 53–809 ms across its measured matrix. Repeating
+- Prototype exact replay took 53–809 ms for successful routes in its measured matrix. Repeating
   that work synchronously on the main thread was rejected; one authoritative
   replay remains in the worker, with request identity and consistency checks
   at acceptance. These prototype timings are not a final-build benchmark.
