@@ -288,7 +288,8 @@ button:active {
   flex-wrap: wrap;
   gap: 6px;
 }
-button:disabled {
+button:disabled,
+button[aria-disabled='true'] {
   opacity: 0.45;
   cursor: default;
 }

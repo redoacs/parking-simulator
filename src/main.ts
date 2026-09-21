@@ -108,6 +108,7 @@ async function main(): Promise<void> {
   const readouts = createReadouts(hud, panel.readoutSection);
   const maneuverClient = new ManeuverClient((state) => {
     const hadPreview = !!app.snapshot().maneuver;
+    const previewFocused = maneuverUI.bar.contains(document.activeElement) || maneuverUI.section.contains(document.activeElement);
     app.showManeuver(state.status === 'ready' ? state.maneuver : null);
     document.body.classList.toggle('maneuver-active', state.status === 'ready');
     maneuverUI.setState(state, app.snapshot().mirrors);
@@ -118,7 +119,7 @@ async function main(): Promise<void> {
       maneuverUI.focusPlay();
     } else if (hadPreview) {
       app.fitView();
-      maneuverUI.restoreFocus();
+      if (previewFocused) maneuverUI.restoreFocus();
     }
   });
   const maneuverUI = createManeuverUI({

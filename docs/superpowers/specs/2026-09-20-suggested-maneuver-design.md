@@ -43,7 +43,7 @@ the source retains its MIT notice. Search prefixes can change gear. This is not
 a full Reeds–Shepp solver. A tolerance-region goal remains available when an
 exact connection cannot fit. The search's costs prefer fewer shifts and steering
 stops and penalize travel near obstacles. After the first candidate it explores
-up to 3,000 additional nodes and keeps the lower-cost candidate. This can improve
+up to 3,000 additional expansions and keeps the lower-cost candidate. This can improve
 clearance but does not guarantee the safest, shortest or simplest route.
 
 Limits are 100,000 expansions, 250,000 generated nodes and a 10-second search
@@ -83,7 +83,9 @@ direction changes count sign changes between moving controls, ignoring stops.
 Each request owns one module worker. Changing preset, parameters, mirrors or the
 scenario hash invalidates the request before terminating its worker. Acceptance
 requires the request generation, worker identity, echoed canonical scenario key
-and exact preset start to match. Worker errors leave the manual simulator usable.
+and exact preset start to match. The last two are inexpensive consistency checks
+against divergence between the request and worker's scene-building code; worker
+identity and generation enforce cancellation. Worker errors leave the manual simulator usable.
 The worker returns only replay-validated commands, states and metrics.
 
 The overlay and ghost both use those validated states directly. The route traces
@@ -92,7 +94,8 @@ plays or steps through the steering/direction instructions. Its state, clock and
 controls are separate from the user's car, history, first contact and swept
 texture. While the demonstration is visible the user's drive is paused. Closing
 it clears held input and resumes that drive. R/reset restarts only the ghost;
-Space pauses it. Language switching updates text without changing either pose
+Space pauses it outside the demonstration buttons; a focused demonstration
+button uses Space for normal button activation. Language switching updates text without changing either pose
 or the playback position. Scene fitting reserves space for the playback bar.
 
 The controls and metrics use the existing typed English/Spanish catalogs.
@@ -109,3 +112,7 @@ and rejected control replays. The smallest tested parallel and perpendicular
 configurations can return `limit`; the finite search does not establish
 infeasibility. Browser coverage includes all three engines, English/Spanish
 switching and compact viewports. Emulation does not qualify a physical phone.
+The unit matrix allows a 60-second search budget for slow test runners; it
+checks route validity and representative success, not the product's latency.
+Browser tests use the production worker and its normal budgets. Neither suite
+establishes a performance guarantee on slower devices.

@@ -23,8 +23,8 @@ export function rectPolygon(r: Rect) {
 }
 
 /** Fast, conservative separating-axis clearance for search. Final replay uses polygonDistance independently. */
-export function domainFor(scene: Scene, vehicle: DerivedVehicle, mirrors: boolean, roads = scene.drivingArea) {
-  const { outer, blocked } = drivingDomain(roads);
+export function domainFor(scene: Scene, vehicle: DerivedVehicle, mirrors: boolean) {
+  const { outer, blocked } = drivingDomain(scene.drivingArea);
   const obstacles = [...scene.obstacles.filter((o) => isCollidable(o.kind)).map((o) => boundsOf([o.polygon])), ...blocked];
   const box = (r: Rect) => ({ x: (r.minX + r.maxX) / 2, y: (r.minY + r.maxY) / 2, hx: (r.maxX - r.minX) / 2, hy: (r.maxY - r.minY) / 2 });
   // Bounding boxes are exact for the current rectangular presets; a future non-rectangular obstacle is conservative.
@@ -58,5 +58,5 @@ export function domainFor(scene: Scene, vehicle: DerivedVehicle, mirrors: boolea
     }
     return gap;
   };
-  return { clearance, radius, outer, obstacles };
+  return { clearance, radius };
 }

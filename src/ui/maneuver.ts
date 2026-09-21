@@ -87,7 +87,7 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
     } else metrics.textContent = '';
     bar.hidden = !preview;
     if (!preview) return;
-    next.disabled = preview.frame === preview.frames - 1;
+    next.setAttribute('aria-disabled', String(preview.frame === preview.frames - 1));
     const instruction = preview.instruction;
     const cue = instruction
       ? `${t()['maneuver.step']({ step: fmt(preview.step + 1, 0), total: fmt(preview.steps, 0) })}: ${t()[instruction.steer > 0 ? 'maneuver.left' : instruction.steer < 0 ? 'maneuver.right' : 'maneuver.straight']} ${instruction.gear ? t()['maneuver.move']({ direction: t()[instruction.gear > 0 ? 'drive.forward' : 'drive.reverse'], distance: fmt(instruction.distance, 1) }) : ''}`

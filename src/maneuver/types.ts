@@ -1,4 +1,4 @@
-import type { ControlInput, VehicleState } from '../sim/model';
+import { SIM_DT, type ControlInput, type VehicleState } from '../sim/model';
 
 export interface Command {
   input: ControlInput;
@@ -13,4 +13,4 @@ export interface Maneuver {
   clearance: number;
 }
 export const CLEARANCE_FLOOR = 0.01;
-export const MAX_REPLAY_STEPS = 120 * 180;
+export const MAX_REPLAY_STEPS = Math.round(180 / SIM_DT);

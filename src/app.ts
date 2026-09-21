@@ -141,6 +141,7 @@ export class App {
   }
 
   showManeuver(plan: Maneuver | null): void {
+    if (!plan && !this.maneuver) return;
     this.input.clear();
     if (this.wasRewinding) this.renderer.rebuildEnvelope(this.allFootprints());
     this.wasRewinding = false;

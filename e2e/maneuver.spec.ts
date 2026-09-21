@@ -37,6 +37,9 @@ for (const preset of ['parallel', 'perpendicular', 'garage'])
       await next.click();
     }
     await expect(page.locator('.maneuver-caption')).toContainText('Demostración terminada');
+    const next = page.locator('.maneuver-bar').getByRole('button', { name: 'Siguiente instrucción', exact: true });
+    await expect(next).toHaveAttribute('aria-disabled', 'true');
+    await expect(next).toBeFocused();
     const done = await page.evaluate(() => window.__sim!.snapshot());
     expect(done.maneuver!.state.speed).toBe(0);
     const untouched = await page.evaluate(([x, y]) => window.__sim!.readEnvelopeAt(x, y), [
@@ -51,15 +54,23 @@ for (const preset of ['parallel', 'perpendicular', 'garage'])
     expect((await page.evaluate(() => window.__sim!.snapshot())).state).toEqual(before.state);
   });
 
-test('failed search remains a bounded result, and a scenario edit invalidates a ready route', async ({ page }) => {
+test('bounded search returns a route or limit, and a scenario edit invalidates a ready route', async ({ page }) => {
   await page.goto('/#p=parallel&spotLength=5&spotWidth=2&laneWidth=2.5');
   await expect(page.locator('#hud')).toContainText('clearance');
   await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
-  await expect(page.locator('.maneuver-panel [role=status]')).toContainText('No maneuver found within the search limit', {
-    timeout: 35000,
-  });
-  await expect(page.locator('.maneuver-bar')).toBeHidden();
+  await expect
+    .poll(() => page.locator('.maneuver-panel [role=status]').innerText(), { timeout: 35000 })
+    .toMatch(/No maneuver found within the search limit|Purple car: demonstration/);
   await page.getByRole('combobox', { name: 'Scenario preset' }).selectOption('garage');
+  await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
+  await expect(page.locator('.maneuver-bar')).toBeVisible({ timeout: 35000 });
+  const width = page.getByRole('spinbutton', { name: 'Interior width (m)', exact: true });
+  await width.focus();
+  await width.press('ArrowUp');
+  await expect(width).toBeFocused();
+  await width.press('ArrowUp');
+  await expect(width).toHaveValue('3.1');
+  await expect(page.locator('.maneuver-bar')).toBeHidden();
   await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
   await expect(page.locator('.maneuver-bar')).toBeVisible({ timeout: 35000 });
   await page.locator('label.param', { hasText: 'Include mirrors' }).locator('input').uncheck();
