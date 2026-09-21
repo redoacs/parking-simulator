@@ -69,6 +69,17 @@ export const garage: PresetDef = {
         maxX: b.maxX + BOUNDS_PAD,
         maxY: b.maxY + BOUNDS_PAD,
       },
+      parkingHeadings: [Math.PI / 2, -Math.PI / 2],
+      drivingArea: [
+        {
+          minX: side ? iw / 2 - 12 : Math.min(0, dvX0) - BOUNDS_PAD,
+          minY: -dvl - (side ? streetWidth : 5),
+          maxX: side ? iw / 2 + 12 : Math.max(iw, dvX1) + BOUNDS_PAD,
+          maxY: -dvl,
+        },
+        { minX: dvX0, minY: -dvl, maxX: dvX1, maxY: 0 },
+        { minX: 0, minY: 0, maxX: iw, maxY: id },
+      ],
       obstacles,
       target,
       start,

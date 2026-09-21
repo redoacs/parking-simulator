@@ -79,6 +79,16 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it('keeps held driving input when no preview exists, including a mirror edit', () => {
+  const h = harness();
+  h.app.input.setKey('forward', true);
+  h.frames(2);
+  h.app.showManeuver(null); // searching, limit, error or idle cancellation
+  h.app.setMirrors(false);
+  h.frames(2);
+  expect(h.app.snapshot().state.speed).toBe(2);
+});
+
 describe('App rewind', () => {
   it('does not retain a future contact time when rewind skips an idle mirror toggle', () => {
     const h = harness(undefined, { x: 0.94, y: 1.5, theta: Math.PI / 2, steer: 0, speed: 0 });

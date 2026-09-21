@@ -9,6 +9,8 @@ import { deriveVehicle } from '../vehicle/derive';
 
 const v = deriveVehicle(validateVehicleSpec(taos));
 const scene: Scene = {
+  parkingHeadings: [0, Math.PI],
+  drivingArea: [{ minX: -10, minY: -10, maxX: 10, maxY: 10 }],
   bounds: { minX: -10, minY: -10, maxX: 10, maxY: 10 },
   obstacles: [
     { kind: 'wall', height: 2, polygon: rect(5, -5, 5.2, 5) },

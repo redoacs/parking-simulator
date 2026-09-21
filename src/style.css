@@ -276,3 +276,58 @@ button:active {
     display: none;
   }
 }
+
+.maneuver-panel p {
+  margin: 8px 0;
+}
+.maneuver-panel p:empty {
+  display: none;
+}
+.maneuver-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+button:disabled,
+button[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+.maneuver-bar {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 12px;
+  right: 12px;
+  max-width: 720px;
+  margin: auto;
+  padding: 10px 12px;
+  background: rgb(29 34 42 / 96%);
+  border: 1px solid #7d559d;
+  border-radius: 8px;
+}
+.maneuver-bar[hidden] {
+  display: none;
+}
+.maneuver-bar p {
+  margin: 4px 0 8px;
+}
+.maneuver-bar .source {
+  margin-bottom: 0;
+}
+.maneuver-active #overlay .thumb {
+  display: none;
+}
+.maneuver-active .pad.wide-only {
+  display: none;
+}
+@media (max-width: 899px), (pointer: coarse) {
+  .maneuver-bar button {
+    min-height: 44px;
+    flex: 1 1 auto;
+  }
+  .maneuver-bar {
+    left: calc(8px + env(safe-area-inset-left));
+    right: calc(8px + env(safe-area-inset-right));
+  }
+}

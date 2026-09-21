@@ -176,6 +176,7 @@ test('held controls keep independent sources and support Enter, Space stop, and 
   expect(await speed()).toBe(2);
 
   const forward = page.getByRole('button', { name: 'Forward', exact: true });
+  await forward.scrollIntoViewIfNeeded();
   const box = (await forward.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

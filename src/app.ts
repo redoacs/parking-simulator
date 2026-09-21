@@ -1,3 +1,6 @@
+import { ManeuverPlayback, type ManeuverSnapshot } from './maneuver/playback';
+import { maneuverPath, ghostPolygons } from './maneuver/drawing';
+import type { Maneuver } from './maneuver/types';
 import { checkClearance, isParked, parkedOffsets, worldOutline, type Clearance } from './geom/clearance';
 import { transformPolygon, type Polygon } from './geom/polygon';
 import { guideCircles } from './geom/turning';
@@ -30,6 +33,7 @@ export interface Snapshot {
   parkedOffsets: { left: number; right: number; headingErrorDeg: number } | null;
   simTime: number;
   historyLength: number;
+  maneuver: ManeuverSnapshot | null;
 }
 
 export class App {
@@ -63,6 +67,7 @@ export class App {
   private lastFrame = 0;
   private wasRewinding = false;
   private readonly simParams: SimParams;
+  private maneuver: ManeuverPlayback | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -95,6 +100,7 @@ export class App {
   }
 
   setPreset(id: string, params: Params): void {
+    this.showManeuver(null);
     const def = getPreset(id) ?? PRESETS[0]!;
     this.presetId = def.id;
     this.params = clampParams(def, params);
@@ -107,6 +113,7 @@ export class App {
   }
 
   setMirrors(on: boolean): void {
+    if (on !== this.mirrors) this.showManeuver(null);
     this.mirrors = on;
     this.renderer.rebuildEnvelope(this.allFootprints());
     this.updateClearance();
@@ -117,6 +124,10 @@ export class App {
   }
 
   reset(): void {
+    if (this.maneuver) {
+      this.maneuver.restart();
+      return;
+    }
     this.state = this.scene.start;
     this.history.clear();
     this.simTime = 0;
@@ -127,6 +138,23 @@ export class App {
     this.rewindAccumulator = 0;
     this.renderer.resetEnvelope();
     this.updateClearance();
+  }
+
+  showManeuver(plan: Maneuver | null): void {
+    if (!plan && !this.maneuver) return;
+    this.input.clear();
+    if (this.wasRewinding) this.renderer.rebuildEnvelope(this.allFootprints());
+    this.wasRewinding = false;
+    this.rewindAccumulator = 0;
+    this.maneuver = plan ? new ManeuverPlayback(plan) : null;
+    this.staticPolys = [...scenePolygons(this.scene), ...(plan ? maneuverPath(plan) : [])];
+    this.staticVersion++;
+  }
+  toggleManeuver(): void {
+    this.maneuver?.toggle();
+  }
+  stepManeuver(): void {
+    this.maneuver?.next();
   }
 
   zoomBy(factor: number): void {
@@ -167,6 +195,7 @@ export class App {
       parkedOffsets: parked ? parkedOffsets(body, this.state, this.scene) : null,
       simTime: this.simTime,
       historyLength: this.history.length,
+      maneuver: this.maneuver?.snapshot() ?? null,
     };
   }
 
@@ -184,7 +213,10 @@ export class App {
     if (this.input.takeReset()) this.reset();
     if (this.input.takeFit()) this.fitView();
 
-    if (this.input.rewindHeld) {
+    if (this.maneuver) {
+      if (this.input.stopHeld) this.maneuver.pause();
+      this.maneuver.advance(frameDt);
+    } else if (this.input.rewindHeld) {
       this.rewind(frameDt);
       this.wasRewinding = true;
     } else {
@@ -198,6 +230,7 @@ export class App {
 
     const ringThickness = 2 / this.renderer.camera.ppm;
     const dynamicPolys = vehiclePolygons(this.vehicle, this.state, this.mirrors);
+    if (this.maneuver) dynamicPolys.push(...ghostPolygons(this.vehicle, this.maneuver.snapshot().state, this.mirrors));
     if (this.clearance) {
       const ruler = rulerPolygon(this.clearance);
       if (ruler) dynamicPolys.push(ruler);

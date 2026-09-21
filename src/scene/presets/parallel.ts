@@ -42,6 +42,10 @@ export const parallel: PresetDef = {
     return rotateScene(
       {
         bounds: { minX: b.minX - BOUNDS_PAD, minY: b.minY - BOUNDS_PAD, maxX: b.maxX + BOUNDS_PAD + 4, maxY: b.maxY + BOUNDS_PAD },
+        parkingHeadings: [0],
+        drivingArea: [
+          { minX: -NEIGHBOUR_CAR.length - 3, minY: 0, maxX: spotLength + NEIGHBOUR_CAR.length + 3, maxY: spotWidth + laneWidth },
+        ],
         obstacles,
         target,
         start,
