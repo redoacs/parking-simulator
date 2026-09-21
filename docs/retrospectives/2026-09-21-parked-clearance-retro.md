@@ -19,8 +19,9 @@ validated result. Search stops at the target quality instead of spending another
 The default aligned center maximizes the minimum edge margin for the current
 vehicle geometry. That claim does not imply route optimality or reachability.
 Narrow spaces use a conservative boundary adjustment with a motion allowance;
-the display distinguishes centered, adjusted and fallback finishes. Both final
-margin and approach clearance are visible in the bilingual playback bar.
+the display distinguishes centered, adjusted and fallback finishes. Final
+margin is prominent in the bilingual playback bar; compact playback also shows
+approach clearance, which otherwise remains in settings.
 Negative margin discloses footprint overhang without making painted edges
 collidable.
 
@@ -77,3 +78,17 @@ Final gates and independent review use a frozen candidate. The review must
 cover this entire closeout as well as implementation and tests. Its first full
 P-10 result is recorded separately from any repair confirmation in the PR and,
 if admitted, the collaboration record.
+
+The first full independent Fable 5.1/high review at `bdc7efe` returned READY with
+0 Blocking, 2 Should-fix and 7 Optional findings. Both Should-fixes were accepted:
+the unit matrix now declares expected placement explicitly for all default
+toggle combinations, browser coverage includes mirrors-off parallel parking,
+and the adjusted overhang result is pinned. Parked margin is prominent in both
+settings and playback; the duplicate desktop approach line is hidden while
+compact playback retains it. Minor corrections remove historical comparisons
+from the current spec and name shallow perpendicular boundary adjustments.
+The existing vehicle-premise guards, conservative arrival allowance and safe
+validator label are retained with their stated limits. The amendment packet
+includes the previously external matrix source manifest. Detailed dispositions
+and any subsequent review result belong to the PR; later approval does not
+replace this first-full-review yield.

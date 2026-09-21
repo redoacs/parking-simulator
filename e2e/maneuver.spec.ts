@@ -12,9 +12,10 @@ for (const preset of ['parallel', 'perpendicular', 'garage'])
     await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
     await expect(page.locator('.maneuver-bar')).toBeVisible({ timeout: 35000 });
     await expect(page.locator('.maneuver-metrics')).toContainText('clearance ≥');
-    await expect(page.locator('.maneuver-outcome')).toContainText('Parked margin:');
-    await expect(page.locator('.maneuver-outcome')).toContainText('Approach clearance ≥');
-    await expect(page.locator('.maneuver-outcome')).toContainText('Centered, aligned finish');
+    await expect(page.locator('.maneuver-bar .maneuver-outcome')).toContainText('Parked margin:');
+    await expect(page.locator('.maneuver-approach')).toBeHidden();
+    await expect(page.locator('.maneuver-panel .maneuver-outcome')).toContainText('Parked margin:');
+    await expect(page.locator('.maneuver-bar .maneuver-outcome')).toContainText('Centered, aligned finish');
     const play = page.locator('.maneuver-bar').getByRole('button', { name: 'Play demonstration', exact: true });
     await page.evaluate(() => (document.activeElement as HTMLElement).blur());
     await page.keyboard.down('Space');
@@ -31,8 +32,8 @@ for (const preset of ['parallel', 'perpendicular', 'garage'])
     const hash = new URL(page.url()).hash;
     await page.getByRole('combobox', { name: 'Language / Idioma' }).selectOption('es');
     await expect(page.locator('.maneuver-panel')).toContainText('Maniobra sugerida');
-    await expect(page.locator('.maneuver-outcome')).toContainText('Margen final:');
-    await expect(page.locator('.maneuver-outcome')).toContainText('Posición final centrada');
+    await expect(page.locator('.maneuver-bar .maneuver-outcome')).toContainText('Margen final:');
+    await expect(page.locator('.maneuver-bar .maneuver-outcome')).toContainText('Posición final centrada');
     expect(new URL(page.url()).hash).toBe(hash);
     expect((await page.evaluate(() => window.__sim!.snapshot().maneuver))!.frame).toBe(paused.maneuver!.frame);
     for (let i = 0; i < 30; i++) {
@@ -60,6 +61,20 @@ for (const preset of ['parallel', 'perpendicular', 'garage'])
     await expect(page.locator('.maneuver-bar')).toBeHidden();
     expect((await page.evaluate(() => window.__sim!.snapshot())).state).toEqual(before.state);
   });
+
+test('the parallel default reaches the center with mirrors disabled', async ({ page }) => {
+  await page.goto('/#p=parallel');
+  await expect(page.locator('#hud')).toContainText('clearance');
+  await page.locator('label.param', { hasText: 'Include mirrors' }).locator('input').uncheck();
+  await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
+  const outcome = page.locator('.maneuver-bar .maneuver-outcome');
+  await expect(outcome).toBeVisible({ timeout: 35000 });
+  await expect(outcome).toContainText('without mirrors');
+  const m = await page.evaluate(() => window.__sim!.snapshot().maneuver!);
+  expect(m.placement).toBe('centered');
+  expect(m.centerOffset).toBeLessThan(0.001);
+  expect(m.parkedMargin).toBeCloseTo(0.2795, 6);
+});
 
 test('bounded search returns a route or limit, and a scenario edit invalidates a ready route', async ({ page }) => {
   await page.goto('/#p=parallel&spotLength=5&spotWidth=2&laneWidth=2.5');
@@ -90,13 +105,14 @@ test('a narrow space reports mirror overhang separately from collision clearance
   await page.goto('/#p=parallel&spotWidth=2');
   await expect(page.locator('#hud')).toContainText('clearance');
   await page.getByRole('button', { name: 'Show maneuver', exact: true }).click();
-  const outcome = page.locator('.maneuver-outcome');
+  const outcome = page.locator('.maneuver-bar .maneuver-outcome');
   await expect(outcome).toBeVisible({ timeout: 35000 });
   await expect(outcome).toContainText('Parked margin: -');
   await expect(outcome).toContainText('Negative margin:');
-  await expect(outcome).toContainText('Approach clearance ≥');
+  await expect(page.locator('.maneuver-metrics')).toContainText('approach clearance ≥');
   const m = await page.evaluate(() => window.__sim!.snapshot().maneuver!);
-  expect(m.placement).not.toBe('centered');
+  expect(m.placement).toBe('adjusted');
+  await expect(outcome).toContainText('Position adjusted for boundary clearance');
   expect(m.clearance).toBeGreaterThanOrEqual(0.01);
   expect(m.parkedMargin).toBeLessThan(0);
   await page.getByRole('combobox', { name: 'Language / Idioma' }).selectOption('es');
@@ -114,6 +130,8 @@ test('compact Spanish playback fits above its controls and resets only the ghost
   const bar = page.locator('.maneuver-bar');
   await expect(bar).toBeVisible({ timeout: 35000 });
   await expect(bar.locator('.maneuver-outcome')).toContainText('Margen final:');
+  await expect(bar.locator('.maneuver-approach')).toBeVisible();
+  await expect(bar.locator('.maneuver-approach')).toContainText('Distancia durante la maniobra');
   await expect(page.locator('#panel')).not.toBeInViewport();
   await expect(page.locator('#overlay .thumb')).toHaveCount(2);
   const manual = await page.evaluate(() => window.__sim!.snapshot().state);

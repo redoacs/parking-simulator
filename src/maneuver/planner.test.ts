@@ -8,34 +8,34 @@ import { boundsOf } from '../geom/polygon';
 import { checkClearance, worldOutline } from '../geom/clearance';
 import * as replay from './validate';
 const v = deriveVehicle(validateVehicleSpec(taos));
-const cases: [string, string, Record<string, number>][] = [
-  ['garage-default', 'garage', {}],
-  ['garage-default-mirrors-off', 'garage', {}],
-  ['parallel-mirrors-off', 'parallel', {}],
-  ['perpendicular-mirrors-off', 'perpendicular', {}],
-  ['garage-side-mirrors-off', 'garage', { approachAngle: 90 }],
-  ['parallel-no-kerb', 'parallel', { kerb: 0 }],
-  ['parallel-no-kerb-mirrors-off', 'parallel', { kerb: 0 }],
-  ['parallel-overhang', 'parallel', { spotWidth: 2 }],
-  ['perpendicular-no-neighbours', 'perpendicular', { neighbours: 0 }],
-  ['perpendicular-no-neighbours-mirrors-off', 'perpendicular', { neighbours: 0 }],
+const cases: [string, string, Record<string, number>, ('centered' | 'adjusted')?][] = [
+  ['garage-default', 'garage', {}, 'centered'],
+  ['garage-default-mirrors-off', 'garage', {}, 'centered'],
+  ['parallel-mirrors-off', 'parallel', {}, 'centered'],
+  ['perpendicular-mirrors-off', 'perpendicular', {}, 'centered'],
+  ['garage-side-mirrors-off', 'garage', { approachAngle: 90 }, 'centered'],
+  ['parallel-no-kerb', 'parallel', { kerb: 0 }, 'centered'],
+  ['parallel-no-kerb-mirrors-off', 'parallel', { kerb: 0 }, 'centered'],
+  ['parallel-overhang', 'parallel', { spotWidth: 2 }, 'adjusted'],
+  ['perpendicular-no-neighbours', 'perpendicular', { neighbours: 0 }, 'centered'],
+  ['perpendicular-no-neighbours-mirrors-off', 'perpendicular', { neighbours: 0 }, 'centered'],
   ['garage-wide-drive', 'garage', { drivewayWidth: 4, interiorWidth: 2.6 }],
   ['garage-narrow-drive', 'garage', { drivewayWidth: 2.5, interiorWidth: 4 }],
   ['perpendicular-min', 'perpendicular', { bayWidth: 2.3, bayDepth: 4.5, aisleWidth: 5 }],
   ['parallel-narrow-lane', 'parallel', { laneWidth: 2.5 }],
   ['garage-side-tight', 'garage', { approachAngle: 90, doorWidth: 2.2, interiorWidth: 2.6, interiorDepth: 5, drivewayWidth: 3 }],
-  ['parallel-default', 'parallel', {}],
-  ['perpendicular-default', 'perpendicular', {}],
+  ['parallel-default', 'parallel', {}, 'centered'],
+  ['perpendicular-default', 'perpendicular', {}, 'centered'],
   ['parallel-tight', 'parallel', { spotLength: 5.5, spotWidth: 2.3, laneWidth: 3 }],
   ['parallel-min', 'parallel', { spotLength: 5, spotWidth: 2, laneWidth: 2.5 }],
   ['parallel-spacious', 'parallel', { spotLength: 8, spotWidth: 3, laneWidth: 5 }],
   ['perpendicular-tight', 'perpendicular', { bayWidth: 2.3, bayDepth: 4.7, aisleWidth: 5 }],
   ['perpendicular-spacious', 'perpendicular', { bayWidth: 3.2, bayDepth: 6, aisleWidth: 8 }],
   ['garage-tight', 'garage', { doorWidth: 2.2, interiorWidth: 2.6, interiorDepth: 5, drivewayWidth: 2.5, drivewayLength: 3 }],
-  ['garage-side', 'garage', { approachAngle: 90 }],
+  ['garage-side', 'garage', { approachAngle: 90 }, 'centered'],
   ['garage-side-wide', 'garage', { approachAngle: 90, doorWidth: 3, interiorWidth: 4, drivewayWidth: 4, drivewayLength: 8 }],
 ];
-for (const [name, id, overrides] of cases)
+for (const [name, id, overrides, expected] of cases)
   it(
     name,
     () => {
@@ -67,18 +67,18 @@ for (const [name, id, overrides] of cases)
         );
         expect(m.parkedMargin).toBeCloseTo(measured, 10);
         if (name === 'parallel-overhang') {
-          expect(m.placement).not.toBe('centered');
-          expect(m.parkedMargin).toBeLessThan(0);
-          expect(m.parkedMargin).toBeGreaterThan(-0.12);
+          expect(m.parkedMargin).toBeCloseTo(-0.116166, 5);
         }
-        if (name.endsWith('-default') || name.endsWith('-mirrors-off')) {
-          expect(m.placement).toBe('centered');
+        if (expected) {
+          expect(m.placement).toBe(expected);
+          expect(result.reason).toBe('target');
+        }
+        if (expected === 'centered') {
           expect(m.centerOffset).toBeLessThan(0.001);
           expect(m.parkedMargin).toBeCloseTo(
             Math.min((bay.maxX - bay.minX - box.maxX + box.minX) / 2, (bay.maxY - bay.minY - box.maxY + box.minY) / 2),
             6,
           );
-          expect(result.reason).toBe('target');
         }
       } else expect(result.status).toBe('limit');
     },

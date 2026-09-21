@@ -100,7 +100,8 @@ travel. These planning limits do not prevent manual driving over painted lines.
 including mirrors when enabled. It appears in the playback bar. Negative values
 mean the enabled footprint extends over a space edge; painted edges remain
 noncollidable. Narrow parallel spaces may require an off-center finish to stay
-clear of the kerb-side planning boundary, even with the kerb turned off.
+clear of the kerb-side planning boundary, even with the kerb turned off; a
+shallow perpendicular bay may need a small adjustment away from its back wall.
 The demonstration distinguishes a centered finish, a position adjusted for
 boundary clearance, and an off-center fallback found before search ends.
 **Approach clearance** is a conservative lower bound along

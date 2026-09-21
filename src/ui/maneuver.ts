@@ -46,10 +46,12 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
   status.setAttribute('role', 'status');
   const metrics = document.createElement('p');
   metrics.className = 'maneuver-metrics';
+  const panelOutcome = document.createElement('p');
+  panelOutcome.className = 'maneuver-outcome';
   const controls = document.createElement('div');
   controls.className = 'maneuver-buttons';
   controls.append(show, cancel);
-  section.append(legend, about, controls, status, metrics);
+  section.append(legend, about, controls, status, panelOutcome, metrics);
   const bar = document.createElement('section');
   bar.className = 'maneuver-bar';
   bar.hidden = true;
@@ -61,14 +63,16 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
   path.className = 'source';
   path.append(labels.text(() => `${t()['maneuver.path']} · ${t()['maneuver.forwardLegend']} · ${t()['maneuver.reverseLegend']}`));
   const outcome = document.createElement('p');
-  outcome.className = 'maneuver-outcome source';
+  outcome.className = 'maneuver-outcome';
+  const approach = document.createElement('p');
+  approach.className = 'maneuver-approach';
   const play = button(() => (preview?.playing ? t()['maneuver.pause'] : t()['maneuver.play']), actions.toggle);
   const next = button(() => t()['maneuver.next'], actions.next),
     close = button(() => t()['maneuver.close'], actions.cancel);
   const row = document.createElement('div');
   row.className = 'maneuver-buttons';
   row.append(play, next, close);
-  bar.append(caption, row, outcome, path);
+  bar.append(caption, row, outcome, approach, path);
   let lastCaption = '';
   const refresh = () => {
     labels.refresh();
@@ -78,24 +82,29 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
     if (state.status === 'ready') {
       const p = state.maneuver;
       metrics.className = `maneuver-metrics band-${bandFor(p.clearance)}`;
-      metrics.textContent =
-        t()['maneuver.metrics']({
-          distance: fmt(p.distance, 1),
-          changes: fmt(p.directionChanges, 0),
-          clearance: fmt(Math.floor(p.clearance * 1000) / 10, 1),
-        }) +
-        ' ' +
-        t()[mirrors ? 'maneuver.mirrorsOn' : 'maneuver.mirrorsOff'];
-      outcome.textContent =
-        t()['maneuver.parkedMargin']({ margin: fmt(Math.floor(p.parkedMargin * 1000 + 1e-7) / 10, 1) }) +
-        ' ' +
-        t()['maneuver.approachClearance']({ clearance: fmt(Math.floor(p.clearance * 1000) / 10, 1) }) +
-        ' ' +
-        t()[mirrors ? 'maneuver.mirrorsOn' : 'maneuver.mirrorsOff'] +
-        ' ' +
-        t()[`maneuver.${p.placement}`] +
-        (p.parkedMargin < -1e-6 ? ' ' + t()['maneuver.overhang'] : '');
-    } else metrics.textContent = '';
+      metrics.textContent = t()['maneuver.metrics']({
+        distance: fmt(p.distance, 1),
+        changes: fmt(p.directionChanges, 0),
+        clearance: fmt(Math.floor(p.clearance * 1000) / 10, 1),
+      });
+      for (const node of [panelOutcome, outcome]) {
+        const headline = document.createElement('strong');
+        headline.textContent = t()['maneuver.parkedMargin']({ margin: fmt(Math.floor(p.parkedMargin * 1000 + 1e-7) / 10, 1) });
+        const detail = document.createElement('span');
+        detail.className = 'source';
+        detail.textContent =
+          t()[mirrors ? 'maneuver.mirrorsOn' : 'maneuver.mirrorsOff'] +
+          ' ' +
+          t()[`maneuver.${p.placement}`] +
+          (p.parkedMargin < -1e-6 ? ' ' + t()['maneuver.overhang'] : '');
+        node.replaceChildren(headline, detail);
+      }
+      approach.className = `maneuver-approach band-${bandFor(p.clearance)}`;
+      approach.textContent = t()['maneuver.approachClearance']({ clearance: fmt(Math.floor(p.clearance * 1000) / 10, 1) });
+    } else {
+      metrics.textContent = '';
+      panelOutcome.textContent = '';
+    }
     bar.hidden = !preview;
     if (!preview) return;
     next.setAttribute('aria-disabled', String(preview.frame === preview.frames - 1));

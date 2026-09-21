@@ -79,7 +79,7 @@ certify arbitrary replacement vehicle geometry.
 The search targets the centered aligned pose for each allowed heading. Where
 the outer driving boundary prevents that pose, it projects the footprint into
 the boundary with the 1 cm floor plus a maximum-steering half-tick sweep and
-0.01 mm numerical slack. This replaces the old 1 cm lateral grid. It is a
+0.01 mm numerical slack. It is a
 conservative approachable target, not an exact constrained optimum. In a narrow
 parallel space it sacrifices at most that sweep allowance plus slack against
 the aligned static supremum at the hard clearance floor. Other footprint shapes,
@@ -88,8 +88,7 @@ headings, or obstacles inside a bay do not inherit the centering argument.
 Only a candidate that can improve the stored validated result is replayed.
 Rejected replays leave the previous result intact and search continues. Search
 stops on reaching the target margin and centering to 1 micrometre with an aligned
-heading to 1e-6 radians; it no longer spends 3,000 expansions optimizing route
-cost after reaching the requested finish. The display calls an aligned replay
+heading to 1e-6 radians. The display calls an aligned replay
 centered within 1 mm, or adjusted for boundary clearance when it reaches the
 conservative constrained target. Other results say best validated finish found,
 off-center. "Adjusted" does not mean as centered as physically possible.
@@ -155,6 +154,10 @@ button uses Space for normal button activation. Language switching updates text 
 or the playback position. Scene fitting reserves space for the playback bar.
 
 The controls and metrics use the existing typed English/Spanish catalogs.
+Parked margin is prominent in both settings and playback. The approach metric
+appears in settings on desktop and also in the playback bar on compact layouts,
+where settings close during playback. Footprint wording next to the parked
+margin identifies whether it includes mirrors.
 Instructions announce discrete steps when paused, not every animated frame.
 No route cache, persistence, current-pose replanning, worker pool or new runtime
 package is needed.
