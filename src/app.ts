@@ -229,8 +229,9 @@ export class App {
     }
 
     const ringThickness = 2 / this.renderer.camera.ppm;
+    const maneuverState = this.maneuver?.snapshot().state;
     const dynamicPolys = vehiclePolygons(this.vehicle, this.state, this.mirrors);
-    if (this.maneuver) dynamicPolys.push(...ghostPolygons(this.vehicle, this.maneuver.snapshot().state, this.mirrors));
+    if (maneuverState) dynamicPolys.push(...ghostPolygons(this.vehicle, maneuverState, this.mirrors));
     if (this.clearance) {
       const ruler = rulerPolygon(this.clearance);
       if (ruler) dynamicPolys.push(ruler);
@@ -239,7 +240,7 @@ export class App {
       staticPolys: this.staticPolys,
       staticVersion: this.staticVersion,
       dynamicPolys,
-      rings: ringInstancesFor(guideCircles(this.state, this.vehicle), ringThickness),
+      rings: ringInstancesFor(guideCircles(maneuverState ?? this.state, this.vehicle), ringThickness),
       newFootprints: this.pendingFootprints,
       envelopeBounds: this.scene.bounds,
       envelopeVersion: this.envelopeVersion,

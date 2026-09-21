@@ -79,6 +79,7 @@ at the rear axle. The purple car demonstrates the route: play/pause it or use
 **Next instruction** to advance one steering/direction segment. Space pauses
 when focus is outside the demonstration buttons; on a focused demonstration
 button, Space activates that button. R restarts the demonstration.
+The turning guides follow the purple car's position and steering during the demonstration.
 Closing it resumes your own car and its history.
 Your driving clock and swept envelope are paused during the demonstration.
 
