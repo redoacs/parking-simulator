@@ -36,7 +36,7 @@ The useful design corrections were concrete:
 - A fixed 8 cm search floor lost tight cases in the prototype. The implemented
   1 cm acceptance floor and soft clearance cost preserve those possibilities.
   A bounded extra search window improved some routes, but the default parallel
-  result still has only a 3.0 cm displayed lower bound, shown in red. No optimum,
+  result still has only a 3.0 cm displayed lower bound, shown in red in the settings panel. No optimum,
   safest-route or all-dimensions success claim follows.
 
 ## Independent review
@@ -51,6 +51,7 @@ groups, rather than inferred from verdict wording.
 | --- | --- | --- | --- | --- | --- |
 | Implementation 1 | `1eb7efe` | APPROVE, with findings | 0 | 3 | 7 |
 | Implementation delta | `2a36f48` | APPROVE | 0 | 0 | 4 |
+| Full work closeout | `16c5152` | APPROVE, conditional on corrections | 0 | 1 | 6 |
 
 The first verdict's three Should-fix findings required correction despite its
 APPROVE wording:
@@ -89,8 +90,20 @@ files, and matched.
 Root also clarified Space: it pauses outside demonstration buttons, while a
 focused demonstration button uses Space for normal button activation.
 
-The full P-10 closeout review follows this tracked artifact. Its first-pass
-yield will be recorded before merge; later repairs will not erase that score.
+The first full P-10 work-closeout review used another fresh session and found
+one Should-fix: the PR description linked an older retrospective and retained
+pending-state wording. The final description must identify its actual gate
+heads and link the corrected retrospective. Its six Optional findings led to
+these dispositions: add the missing WebKit fixture account below; remove the
+unrelated handoff rule from L-1; qualify the red metric's settings-panel
+placement; supply the original model-error and capture receipts; compress the
+private-memory inventory here; and correct README's cross-engine test comment.
+The user's explicit model selection is root's conversation report, not a
+peer-verifiable receipt. The compact playback bar still omits route metrics;
+repeating them there is deferred as a product placement decision. The paused
+car's HUD clearance must not be read as the ghost route's clearance. These
+repairs do not erase the first full pass's 0/1/6 yield. Bounded amendment review
+and final hosted results are recorded in PR #10 before merge.
 
 ## Validation and limits
 
@@ -98,6 +111,9 @@ At `2a36f48`, all required commands passed against the same unchanged clean
 commit/tree: `pnpm test` (**302 tests**), `pnpm build`, `pnpm lint`,
 `pnpm format:check`, `pnpm test:e2e` (**69 tests**, including 18 maneuver cases
 across Chromium, Firefox and WebKit). The peer took these executions on trust.
+The same five local gates passed again at closeout commit `025b2a4`, with
+302 unit and 69 browser tests. Later closeout edits change documentation only;
+CI checks each pushed head before shipping.
 Local browser runtimes and WebKit libraries were reused; no system install or
 TypeScript upgrade was part of the feature.
 
@@ -107,6 +123,11 @@ overstated the clearance lower bound; restoring unconditional focus return
 failed the first numeric ArrowUp focus assertion in Chromium. The complete
 corrected suite then passed, including the focus case in all three engines.
 The moving concave-corner case did not receive its own mutation run.
+
+The first complete browser run exposed a WebKit fixture placement error:
+the Forward button was below the viewport after the settings panel grew.
+Scrolling it into view before taking raw pointer coordinates fixed the held
+input test; no pointer-handling product change was needed.
 
 Root inspected desktop and compact Spanish captures, including a settled
 320-pixel completion view. The independent reviewer inspected selected frames,
@@ -130,18 +151,10 @@ This is a project procedure, not a proposed capture framework; no separate
 refactor/tool promotion or roadmap entry is created.
 
 README and current specs describe the feature; implementation plans and older
-retrospectives remain historical. AGENTS stays an index. There is no dedicated
-wrap-up protocol, separate architecture file or standing doc-audit hook here.
-
-The memory-hygiene pass resolved the existing private parking-project store:
-four indexed files, no orphan or dangling entries, no current promotion markers
-or newly edited memory links. Two index lines exceed 200 characters (215 and
-228). `repo-and-deploy` and `v1-deferred-minors` contain stale current-state
-claims about informational browser CI, server reuse and keyboard support;
-current tracked CI/config/docs supersede those claims. A scoped private-note
-refresh is recommended, not performed. No memory modification was requested.
-No structural-pattern file exists; consolidation is unwarranted for a four-line
-index. Creative corner is skipped because this is a Codex run.
+retrospectives remain historical. AGENTS stays an index. Private-note refresh
+is recommended and was not performed; tracked CI, configuration and docs are
+authoritative. The detailed read-only hygiene report remains in the working
+notes. No memory modification was requested.
 
 What worked: executable geometry probes settled design disagreements before UI
 work, and a fresh reviewer found input/coverage defects the passing suite missed.
