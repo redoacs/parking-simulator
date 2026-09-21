@@ -58,5 +58,5 @@ export function domainFor(scene: Scene, vehicle: DerivedVehicle, mirrors: boolea
     }
     return gap;
   };
-  return { clearance, radius };
+  return { clearance, radius, outer };
 }

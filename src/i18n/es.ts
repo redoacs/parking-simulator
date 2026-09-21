@@ -2,7 +2,8 @@ import { en, type Messages } from './en';
 
 export const es = {
   'maneuver.title': 'Maniobra sugerida',
-  'maneuver.about': 'Desde el inicio del escenario. Una ruta viable; no se garantiza que sea óptima.',
+  'maneuver.about':
+    'Desde el inicio del escenario. Busca el máximo margen final a bordes y obstáculos, favoreciendo el centrado. La búsqueda es limitada.',
   'maneuver.show': 'Mostrar maniobra',
   'maneuver.cancel': 'Cancelar búsqueda',
   'maneuver.close': 'Cerrar demostración',
@@ -23,7 +24,13 @@ export const es = {
   'maneuver.step': ({ step, total }: { step: string; total: string }) => `Paso ${step} de ${total}`,
   'maneuver.move': ({ direction, distance }: { direction: string; distance: string }) => `${direction} ${distance} m.`,
   'maneuver.metrics': ({ distance, changes, clearance }: { distance: string; changes: string; clearance: string }) =>
-    `${distance} m · cambios de sentido: ${changes} · distancia mínima ≥ ${clearance} cm.`,
+    `${distance} m · cambios de sentido: ${changes} · distancia durante la maniobra ≥ ${clearance} cm.`,
+  'maneuver.parkedMargin': ({ margin }: { margin: string }) => `Margen final: ${margin} cm (bordes + obstáculos).`,
+  'maneuver.approachClearance': ({ clearance }: { clearance: string }) => `Distancia durante la maniobra ≥ ${clearance} cm (obstáculos).`,
+  'maneuver.centered': 'Posición final centrada y alineada.',
+  'maneuver.adjusted': 'Posición ajustada para mantener distancia al límite.',
+  'maneuver.bestFound': 'Mejor posición comprobada; fuera del centro.',
+  'maneuver.overhang': 'Margen negativo: la huella seleccionada sobresale de un borde del espacio.',
   'maneuver.mirrorsOn': 'La distancia incluye los espejos.',
   'maneuver.mirrorsOff': 'La distancia excluye los espejos.',
   'app.title': 'Simulador de estacionamiento',

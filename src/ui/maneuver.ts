@@ -60,13 +60,15 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
   const path = document.createElement('p');
   path.className = 'source';
   path.append(labels.text(() => `${t()['maneuver.path']} · ${t()['maneuver.forwardLegend']} · ${t()['maneuver.reverseLegend']}`));
+  const outcome = document.createElement('p');
+  outcome.className = 'maneuver-outcome source';
   const play = button(() => (preview?.playing ? t()['maneuver.pause'] : t()['maneuver.play']), actions.toggle);
   const next = button(() => t()['maneuver.next'], actions.next),
     close = button(() => t()['maneuver.close'], actions.cancel);
   const row = document.createElement('div');
   row.className = 'maneuver-buttons';
   row.append(play, next, close);
-  bar.append(caption, row, path);
+  bar.append(caption, row, outcome, path);
   let lastCaption = '';
   const refresh = () => {
     labels.refresh();
@@ -84,6 +86,15 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
         }) +
         ' ' +
         t()[mirrors ? 'maneuver.mirrorsOn' : 'maneuver.mirrorsOff'];
+      outcome.textContent =
+        t()['maneuver.parkedMargin']({ margin: fmt(Math.floor(p.parkedMargin * 1000 + 1e-7) / 10, 1) }) +
+        ' ' +
+        t()['maneuver.approachClearance']({ clearance: fmt(Math.floor(p.clearance * 1000) / 10, 1) }) +
+        ' ' +
+        t()[mirrors ? 'maneuver.mirrorsOn' : 'maneuver.mirrorsOff'] +
+        ' ' +
+        t()[`maneuver.${p.placement}`] +
+        (p.parkedMargin < -1e-6 ? ' ' + t()['maneuver.overhang'] : '');
     } else metrics.textContent = '';
     bar.hidden = !preview;
     if (!preview) return;

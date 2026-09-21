@@ -29,7 +29,16 @@ const preset = getPreset('garage')!,
   params = defaultParams(preset),
   input = { presetId: preset.id, params, mirrors: true, spec: validateVehicleSpec(taos) };
 // Transport-only fixture. Physics validity is the validator suite's responsibility.
-const fixture: Maneuver = { commands: [], states: [preset.build(params).start], distance: 0, directionChanges: 0, clearance: 1 };
+const fixture: Maneuver = {
+  commands: [],
+  states: [preset.build(params).start],
+  distance: 0,
+  directionChanges: 0,
+  clearance: 1,
+  parkedMargin: 1,
+  centerOffset: 0,
+  placement: 'centered',
+};
 let events: PlanningState[] = [];
 beforeEach(() => {
   vi.useFakeTimers();
@@ -46,13 +55,13 @@ it('rejects late results after cancellation and after a replacement request', ()
   client.request(input);
   const old = FakeWorker.instances[0]!;
   client.cancel();
-  old.reply({ status: 'found', expanded: 1, maneuver: fixture });
+  old.reply({ status: 'found', reason: 'target', expanded: 1, maneuver: fixture });
   expect(events.at(-1)!.status).toBe('idle');
   client.request({ ...input, mirrors: false });
-  old.reply({ status: 'found', expanded: 1, maneuver: fixture });
+  old.reply({ status: 'found', reason: 'target', expanded: 1, maneuver: fixture });
   expect(events.at(-1)!.status).toBe('searching');
   const current = FakeWorker.instances[1]!;
-  current.reply({ status: 'found', expanded: 1, maneuver: fixture });
+  current.reply({ status: 'found', reason: 'target', expanded: 1, maneuver: fixture });
   expect(events.at(-1)!.status).toBe('ready');
   expect(old.terminated).toBe(true);
   expect(current.terminated).toBe(true);
@@ -60,10 +69,15 @@ it('rejects late results after cancellation and after a replacement request', ()
 it('requires matching scenario identity and exact preset start', () => {
   const client = new ManeuverClient((s) => events.push(s));
   client.request(input);
-  FakeWorker.instances[0]!.reply({ status: 'found', expanded: 1, maneuver: fixture }, 'different-scenario');
+  FakeWorker.instances[0]!.reply({ status: 'found', reason: 'target', expanded: 1, maneuver: fixture }, 'different-scenario');
   expect(events.at(-1)!.status).toBe('error');
   client.request(input);
-  FakeWorker.instances[1]!.reply({ status: 'found', expanded: 1, maneuver: { ...fixture, states: [{ ...fixture.states[0]!, x: 999 }] } });
+  FakeWorker.instances[1]!.reply({
+    status: 'found',
+    reason: 'target',
+    expanded: 1,
+    maneuver: { ...fixture, states: [{ ...fixture.states[0]!, x: 999 }] },
+  });
   expect(events.at(-1)!.status).toBe('error');
 });
 it('terminates an unresponsive worker at the watchdog and contains worker errors', () => {

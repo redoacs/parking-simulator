@@ -1,17 +1,24 @@
-import { expect, it } from 'vitest';
+import { expect, it, vi } from 'vitest';
 import taos from '../vehicle/data/taos-trendline-mx-2025.json';
 import { deriveVehicle } from '../vehicle/derive';
 import { validateVehicleSpec } from '../vehicle/validate';
 import { PRESETS, defaultParams } from '../scene/presets';
 import { planManeuver } from './planner';
+import { boundsOf } from '../geom/polygon';
+import { checkClearance, worldOutline } from '../geom/clearance';
+import * as replay from './validate';
 const v = deriveVehicle(validateVehicleSpec(taos));
 const cases: [string, string, Record<string, number>][] = [
   ['garage-default', 'garage', {}],
+  ['garage-default-mirrors-off', 'garage', {}],
   ['parallel-mirrors-off', 'parallel', {}],
   ['perpendicular-mirrors-off', 'perpendicular', {}],
   ['garage-side-mirrors-off', 'garage', { approachAngle: 90 }],
   ['parallel-no-kerb', 'parallel', { kerb: 0 }],
+  ['parallel-no-kerb-mirrors-off', 'parallel', { kerb: 0 }],
+  ['parallel-overhang', 'parallel', { spotWidth: 2 }],
   ['perpendicular-no-neighbours', 'perpendicular', { neighbours: 0 }],
+  ['perpendicular-no-neighbours-mirrors-off', 'perpendicular', { neighbours: 0 }],
   ['garage-wide-drive', 'garage', { drivewayWidth: 4, interiorWidth: 2.6 }],
   ['garage-narrow-drive', 'garage', { drivewayWidth: 2.5, interiorWidth: 4 }],
   ['perpendicular-min', 'perpendicular', { bayWidth: 2.3, bayDepth: 4.5, aisleWidth: 5 }],
@@ -48,6 +55,31 @@ for (const [name, id, overrides] of cases)
         expect(m.states.at(-1)!.steer).toBeCloseTo(0, 10);
         expect(m.distance).toBeGreaterThan(0);
         expect(m.commands.reduce((sum, c) => sum + c.steps, 0)).toBe(m.states.length - 1);
+        const parts = worldOutline(v, m.states.at(-1)!, mirrors),
+          box = boundsOf(parts),
+          bay = boundsOf([scene.target]);
+        const measured = Math.min(
+          box.minX - bay.minX,
+          bay.maxX - box.maxX,
+          box.minY - bay.minY,
+          bay.maxY - box.maxY,
+          checkClearance(parts, scene)!.distance,
+        );
+        expect(m.parkedMargin).toBeCloseTo(measured, 10);
+        if (name === 'parallel-overhang') {
+          expect(m.placement).not.toBe('centered');
+          expect(m.parkedMargin).toBeLessThan(0);
+          expect(m.parkedMargin).toBeGreaterThan(-0.12);
+        }
+        if (name.endsWith('-default') || name.endsWith('-mirrors-off')) {
+          expect(m.placement).toBe('centered');
+          expect(m.centerOffset).toBeLessThan(0.001);
+          expect(m.parkedMargin).toBeCloseTo(
+            Math.min((bay.maxX - bay.minX - box.maxX + box.minX) / 2, (bay.maxY - bay.minY - box.maxY + box.minY) / 2),
+            6,
+          );
+          expect(result.reason).toBe('target');
+        }
       } else expect(result.status).toBe('limit');
     },
     120000,
@@ -56,6 +88,48 @@ for (const [name, id, overrides] of cases)
 it('bounds an unfinished search by nodes and time without claiming impossibility', () => {
   const p = PRESETS[0]!,
     scene = p.build(defaultParams(p));
-  expect(planManeuver(scene, v, true, 0, 60000)).toEqual({ status: 'limit', expanded: 0 });
-  expect(planManeuver(scene, v, true, 100000, 0)).toEqual({ status: 'limit', expanded: 0 });
+  expect(planManeuver(scene, v, true, 0, 60000)).toEqual({ status: 'limit', expanded: 0, reason: 'expansions' });
+  expect(planManeuver(scene, v, true, 100000, 0)).toEqual({ status: 'limit', expanded: 0, reason: 'time' });
+});
+
+it('continues to another candidate after an improving route fails authoritative replay', () => {
+  const p = PRESETS.find((p) => p.id === 'garage')!,
+    scene = p.build(defaultParams(p));
+  const validator = vi.spyOn(replay, 'validateManeuver').mockImplementationOnce(() => null);
+  try {
+    const result = planManeuver(scene, v, true);
+    expect(validator.mock.calls.length).toBeGreaterThan(1);
+    expect(result.status).toBe('found');
+    if (result.status === 'found') {
+      expect(result.maneuver.placement).toBe('centered');
+      expect(result.maneuver.parkedMargin).toBeCloseTo(0.451, 6);
+    }
+  } finally {
+    validator.mockRestore();
+  }
+});
+
+it('retains its validated fallback at the budget when subsequent candidates fail replay', () => {
+  const p = PRESETS.find((p) => p.id === 'garage')!,
+    scene = p.build(defaultParams(p));
+  // Already legally parked, 10 cm before the bay center. Later replay rejection must not erase it.
+  scene.start = { x: 1.5, y: 1.3245, theta: Math.PI / 2, speed: 0, steer: 0 };
+  const validate = replay.validateManeuver;
+  const validator = vi
+    .spyOn(replay, 'validateManeuver')
+    .mockImplementation(() => null)
+    .mockImplementationOnce(validate);
+  try {
+    const result = planManeuver(scene, v, true, 1, 60000);
+    expect(validator.mock.calls.length).toBeGreaterThan(1);
+    expect(result.status).toBe('found');
+    expect(result.reason).toBe('expansions');
+    if (result.status === 'found') {
+      expect(result.maneuver.placement).toBe('bestFound');
+      expect(result.maneuver.centerOffset).toBeCloseTo(0.1, 8);
+      expect(result.maneuver.clearance).toBeGreaterThanOrEqual(0.01);
+    }
+  } finally {
+    validator.mockRestore();
+  }
 });

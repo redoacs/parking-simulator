@@ -2,7 +2,8 @@ import taos from '../vehicle/data/taos-trendline-mx-2025.json';
 
 export const en = {
   'maneuver.title': 'Suggested maneuver',
-  'maneuver.about': 'From the scenario start. A feasible route; no optimality guarantee.',
+  'maneuver.about':
+    'From the scenario start. Aims for maximum parked clearance to space edges and obstacles, favoring centering. Search is limited.',
   'maneuver.show': 'Show maneuver',
   'maneuver.cancel': 'Cancel search',
   'maneuver.close': 'Close demonstration',
@@ -23,7 +24,13 @@ export const en = {
   'maneuver.step': ({ step, total }: { step: string; total: string }) => `Step ${step} of ${total}`,
   'maneuver.move': ({ direction, distance }: { direction: string; distance: string }) => `${direction} ${distance} m.`,
   'maneuver.metrics': ({ distance, changes, clearance }: { distance: string; changes: string; clearance: string }) =>
-    `${distance} m · direction changes: ${changes} · clearance ≥ ${clearance} cm.`,
+    `${distance} m · direction changes: ${changes} · approach clearance ≥ ${clearance} cm.`,
+  'maneuver.parkedMargin': ({ margin }: { margin: string }) => `Parked margin: ${margin} cm (edges + obstacles).`,
+  'maneuver.approachClearance': ({ clearance }: { clearance: string }) => `Approach clearance ≥ ${clearance} cm (obstacles).`,
+  'maneuver.centered': 'Centered, aligned finish.',
+  'maneuver.adjusted': 'Position adjusted for boundary clearance.',
+  'maneuver.bestFound': 'Best validated finish found; off-center.',
+  'maneuver.overhang': 'Negative margin: the enabled footprint extends beyond a space edge.',
   'maneuver.mirrorsOn': 'Clearance includes mirrors.',
   'maneuver.mirrorsOff': 'Clearance excludes mirrors.',
   'app.title': 'Parking Simulator',
