@@ -232,6 +232,28 @@ test.describe('phone layout', () => {
     const lowest = await page.evaluate(() => window.__sim!.worldToCss(window.__sim!.snapshot().state.x, -4.5).y);
     expect(lowest).toBeLessThan(controlsTop);
   });
+
+  test('a tap on a vehicle dimension shows its source note', async ({ page }) => {
+    await boot(page);
+    await page.getByRole('button', { name: 'Settings' }).tap();
+    await expect(page.locator('#panel')).toBeInViewport();
+    const row = page.locator('#panel details.cited', { has: page.locator('summary', { hasText: 'Turning circle' }) });
+    const summary = row.locator('summary');
+    await summary.scrollIntoViewIfNeeded();
+    await summary.tap();
+    await expect(row.locator('.note')).toBeVisible();
+    await expect(row.locator('.note')).toHaveText(/applicability to MX 2025 not confirmed/);
+    await expect(row.locator('a.source')).toBeVisible();
+  });
+
+  // iOS long-press selection and its loupe cannot be reproduced here: this pins the rule, the phone is the real check.
+  test('text selection is off across the stage, except for fatal details', async ({ page }) => {
+    await boot(page);
+    const userSelect = (target: Locator) => target.evaluate((el) => getComputedStyle(el).userSelect);
+    for (const target of [page.locator('#stage'), page.locator('#hud'), page.getByRole('button', { name: 'Reverse', exact: true })])
+      expect(await userSelect(target)).toBe('none');
+    expect(await userSelect(page.locator('#fatal'))).toBe('text');
+  });
 });
 
 test('desktop keeps the sidebar and shows no thumb controls', async ({ page }) => {

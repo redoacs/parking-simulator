@@ -126,8 +126,8 @@ Every dimension in `src/vehicle/data/*.json` carries its source URL and a requir
 field independently of the note wording. The body-width
 interpretation, estimated overhangs, and mirror geometry are marked `unverified`. Track widths and turning
 circle come from VW's 2024 US Taos sheet; their applicability to the 2025 MX
-vehicle is also marked `unverified`. Hover notes on the source links explain each
-dimension, including the turning circle. These assumptions affect the clearances
+vehicle is also marked `unverified`. Tap or click a dimension to read its source note,
+including the turning circle's, and to reach its source link. These assumptions affect the clearances
 and maneuvers the simulator reports.
 
 ## Verification

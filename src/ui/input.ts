@@ -31,6 +31,28 @@ export function keyFromEvent(e: KeyEventLike): DriveKey | undefined {
   return KEYMAP[e.code];
 }
 
+/**
+ * Space activates an ordinary focused control (button, disclosure) only when its keydown started there; elsewhere it is
+ * the drive keys' stop. A keyup from a driving Space press must still reach DriveInput to release stop.
+ */
+export function claimSpace(control: HTMLElement): void {
+  let spaceStartedHere = false;
+  control.addEventListener('keydown', (e) => {
+    if (e.code !== 'Space') return;
+    if (!e.repeat) spaceStartedHere = true;
+    if (spaceStartedHere) e.stopPropagation();
+  });
+  control.addEventListener('keyup', (e) => {
+    if (e.code === 'Space' && spaceStartedHere) {
+      spaceStartedHere = false;
+      e.stopPropagation();
+    }
+  });
+  control.addEventListener('blur', () => {
+    spaceStartedHere = false;
+  });
+}
+
 export class DriveInput {
   private readonly down = new Map<DriveKey, Set<string | symbol>>();
   private resetPending = false;
