@@ -220,8 +220,8 @@ Left panel:
 - Preset selector + its numeric inputs (live; changing a value rebuilds the
   scene and resets the car).
 - Suggested maneuver: local search, route, independent ghost playback and instructions in both languages.
-- Vehicle card: name, each dimension with a link to its source, "unverified"
-  badge where applicable, mirrors toggle.
+- Vehicle card: name, each dimension as a row that opens (tap, click or Enter)
+  to its source note and link, "unverified" badge where applicable, mirrors toggle.
 - Readouts: min clearance in cm (green ≥ 30, amber 10–30, red < 10, "CONTACT"
   ≤ 0 with the obstacle kind), steer angle (°), speed (km/h), sim time,
   time-scale slider, parked status with final offsets (red when also in contact).

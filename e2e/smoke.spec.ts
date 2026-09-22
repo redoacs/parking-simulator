@@ -238,8 +238,17 @@ test('borrowed vehicle data carries its uncertainty', async ({ page }) => {
   await page.waitForFunction(() => Boolean(window.__sim) || !document.getElementById('fatal')!.hidden, null, { timeout: 20_000 });
   await expect(page.locator('#fatal')).toBeHidden();
   for (const name of ['Track front', 'Track rear', 'Turning circle']) {
-    const row = page.locator('#panel .readout', { hasText: name });
-    await expect(row.locator('.unverified')).toHaveText('unverified');
-    await expect(row.locator('a.source')).toHaveAttribute('title', /applicability to MX 2025 not confirmed/);
+    const row = page.locator('#panel details.cited', { has: page.locator('summary', { hasText: name }) });
+    const summary = row.locator('summary');
+    await expect(summary.locator('.unverified')).toHaveText('unverified');
+    await expect(row.locator('.note')).toBeHidden();
+    await summary.click();
+    await expect(row.locator('.note')).toHaveText(/applicability to MX 2025 not confirmed/);
+    await expect(row.locator('a.source')).toBeVisible();
   }
+  // Enter is not a drive key, so a focused row still opens from the keyboard.
+  const length = page.locator('#panel details.cited', { has: page.locator('summary', { hasText: /^Length/ }) });
+  await length.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(length.locator('.note')).toHaveText('Largo (mm) 4467');
 });

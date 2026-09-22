@@ -30,6 +30,11 @@ test('live language switch preserves the run, camera, inputs and scenario link',
   await language(page).selectOption('es');
   await expect(page).toHaveTitle('Simulador de estacionamiento');
   await expect(page.locator('html')).toHaveAttribute('lang', 'es-MX');
+  // Source links live inside each dimension's disclosure; open the length row (it stays open across the next switch).
+  await page
+    .locator('#panel details.cited', { has: page.locator('a[aria-label="Fuente: Largo"]') })
+    .locator('summary')
+    .click();
   await expect(page.getByRole('link', { name: 'Fuente: Largo', exact: true })).toHaveText('Fuente');
   await expect(page.getByRole('combobox', { name: 'Tipo de escenario' })).toBeVisible();
   await expect(page.getByLabel('Escala de tiempo')).toHaveValue('0.5');
@@ -121,9 +126,11 @@ test.describe('Spanish browser preference', () => {
     expect(page.url()).toContain('doorWidth=2.6');
     expect((await page.evaluate(() => window.__sim!.snapshot().params)).doorWidth).toBe(2.6);
     for (const name of ['Vía delantera', 'Vía trasera', 'Diámetro de giro']) {
-      const row = page.locator('#panel .readout', { hasText: name });
-      await expect(row.locator('.unverified')).toHaveText('sin verificar');
-      await expect(row.locator('a.source')).toHaveAttribute('title', /no se ha confirmado su aplicación a MX 2025/);
+      const row = page.locator('#panel details.cited', { has: page.locator('summary', { hasText: name }) });
+      const summary = row.locator('summary');
+      await expect(summary.locator('.unverified')).toHaveText('sin verificar');
+      await summary.click();
+      await expect(row.locator('.note')).toHaveText(/no se ha confirmado su aplicación a MX 2025/);
     }
     await expect(page.locator('#panel .unverified')).toHaveCount(9);
     const reverse = page.getByRole('button', { name: 'Reversa', exact: true });
@@ -211,5 +218,27 @@ test.describe('Spanish browser preference', () => {
       return hud.left < menu.right && hud.right > menu.left && hud.top < menu.bottom && hud.bottom > menu.top;
     });
     expect(overlap, 'contact readout must leave the menu button clear at 320px').toBe(false);
+  });
+
+  test('vehicle values and uncertainty badges stay on one line at 320px', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await page.goto('/');
+    await ready(page);
+    await page.getByRole('button', { name: 'Ajustes' }).click();
+    await expect(page.locator('#panel')).toBeInViewport();
+    for (const lang of ['es', 'en'] as const) {
+      await language(page).selectOption(lang);
+      const { measured, split } = await page.locator('#panel details.cited summary').evaluateAll((rows) => {
+        const parts = rows.flatMap((row) => [...row.querySelectorAll('.value, .unverified')]);
+        const lines = (part: Element): number => {
+          const range = document.createRange();
+          range.selectNodeContents(part);
+          return new Set([...range.getClientRects()].map((r) => Math.round(r.top))).size;
+        };
+        return { measured: parts.length, split: parts.filter((part) => lines(part) > 1).map((part) => part.textContent) };
+      });
+      expect(measured, `${lang}: 14 values and 9 badges`).toBe(23);
+      expect(split, `${lang} at 320px`).toEqual([]);
+    }
   });
 });
