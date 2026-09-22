@@ -130,6 +130,7 @@ test.describe('Spanish browser preference', () => {
       const summary = row.locator('summary');
       await expect(summary.locator('.unverified')).toHaveText('sin verificar');
       await summary.click();
+      await expect(row.locator('.note')).toBeVisible();
       await expect(row.locator('.note')).toHaveText(/no se ha confirmado su aplicación a MX 2025/);
     }
     await expect(page.locator('#panel .unverified')).toHaveCount(9);

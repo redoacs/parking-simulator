@@ -241,6 +241,7 @@ test.describe('phone layout', () => {
     const summary = row.locator('summary');
     await summary.scrollIntoViewIfNeeded();
     await summary.tap();
+    await expect(row.locator('.note')).toBeVisible();
     await expect(row.locator('.note')).toHaveText(/applicability to MX 2025 not confirmed/);
     await expect(row.locator('a.source')).toBeVisible();
   });
@@ -248,13 +249,10 @@ test.describe('phone layout', () => {
   // iOS long-press selection and its loupe cannot be reproduced here: this pins the rule, the phone is the real check.
   test('text selection is off across the stage, except for fatal details', async ({ page }) => {
     await boot(page);
-    const userSelect = (selector: string) =>
-      page
-        .locator(selector)
-        .first()
-        .evaluate((el) => getComputedStyle(el).userSelect);
-    for (const selector of ['#stage', '#hud', '#overlay button']) expect(await userSelect(selector), selector).toBe('none');
-    expect(await userSelect('#fatal')).toBe('text');
+    const userSelect = (target: Locator) => target.evaluate((el) => getComputedStyle(el).userSelect);
+    for (const target of [page.locator('#stage'), page.locator('#hud'), page.getByRole('button', { name: 'Reverse', exact: true })])
+      expect(await userSelect(target)).toBe('none');
+    expect(await userSelect(page.locator('#fatal'))).toBe('text');
   });
 });
 

@@ -2,6 +2,7 @@ import { bandFor } from '../render/scenePolys';
 import { fmt, t } from '../i18n';
 import type { PlanningState } from '../maneuver/client';
 import type { ManeuverSnapshot } from '../maneuver/playback';
+import { claimSpace } from './input';
 import { createTextBindings } from './textBindings';
 
 export function createManeuverUI(actions: { show: () => void; cancel: () => void; toggle: () => void; next: () => void }) {
@@ -21,23 +22,7 @@ export function createManeuverUI(actions: { show: () => void; cancel: () => void
     b.type = 'button';
     b.append(labels.text(text));
     b.addEventListener('click', action);
-    // Space belongs to an ordinary button only when its keydown started here.
-    // A keyup from a driving Space press must still reach DriveInput to release stop.
-    let spaceStartedHere = false;
-    b.addEventListener('keydown', (e) => {
-      if (e.code !== 'Space') return;
-      if (!e.repeat) spaceStartedHere = true;
-      if (spaceStartedHere) e.stopPropagation();
-    });
-    b.addEventListener('keyup', (e) => {
-      if (e.code === 'Space' && spaceStartedHere) {
-        spaceStartedHere = false;
-        e.stopPropagation();
-      }
-    });
-    b.addEventListener('blur', () => {
-      spaceStartedHere = false;
-    });
+    claimSpace(b);
     return b;
   };
   const show = button(() => t()['maneuver.show'], actions.show),

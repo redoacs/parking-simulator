@@ -5,7 +5,7 @@ import { PRESETS, getPreset, defaultParams, clampParams } from '../scene/presets
 import type { Params } from '../scene/types';
 import { isUnverified, NUMERIC_FIELDS, type Cited } from '../vehicle/types';
 import type { DerivedVehicle } from '../vehicle/derive';
-import type { DriveKey } from './input';
+import { claimSpace, type DriveKey } from './input';
 import type { HashState } from './hash';
 
 export interface PanelOptions {
@@ -56,13 +56,14 @@ export function buildPanel(
     // The space is the line break before the badge; without it the badge joins the label's last word into one unbreakable run.
     const badge = isUnverified(c) ? [' ', el('span', { class: 'unverified' }, text('vehicle.unverified'))] : [];
     // A tap opens the note: touch has no hover, and the link cannot sit in the summary, which is itself the control.
-    return el(
-      'details',
-      { class: 'cited' },
-      el('summary', { class: 'readout' }, el('span', {}, labels.text(label), ...badge), el('span', { class: 'value' }, labels.text(value))),
-      note,
-      link,
+    const summary = el(
+      'summary',
+      { class: 'readout' },
+      el('span', {}, labels.text(label), ...badge),
+      el('span', { class: 'value' }, labels.text(value)),
     );
+    claimSpace(summary);
+    return el('details', { class: 'cited' }, summary, note, link);
   };
   const languageSelect = el(
     'select',
