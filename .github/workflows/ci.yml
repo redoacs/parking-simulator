@@ -9,11 +9,13 @@ permissions:
 
 concurrency:
   group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer PR push cancels the stale run; on main the next run queues, so a Pages deploy is never cut off mid-flight.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -22,10 +24,10 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm test
+      # Also the typecheck: `build` runs `tsc --noEmit` first.
       - run: pnpm build
         env:
           BASE_PATH: /parking-simulator/
@@ -63,6 +65,8 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [check, e2e]
     runs-on: ubuntu-latest
+    # Longer than deploy-pages' own 10-minute limit, so the action reports its timeout first.
+    timeout-minutes: 15
     permissions:
       contents: read
       pages: write
